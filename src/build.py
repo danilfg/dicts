@@ -98,8 +98,15 @@ def tar_data(blob):
 
 def stardict(raw):
     d={k:v for k,v in raw.items() if k.endswith((".ifo",".idx",".syn",".dict.dz",".dict"))}
-    if not any(k.endswith(".idx") for k in d):raise ValueError("StarDict index missing")
-    if not any(k.endswith((".dict",".dict.dz")) for k in d):raise ValueError("StarDict data missing")
+    for name,payload in raw.items():
+        if name.endswith((".idx.gz",".idx.dz")):
+            d[name.rsplit(".",1)[0]]=gzip.decompress(payload)
+        if name.endswith(".dict.gz"):
+            d[name[:-3]]=gzip.decompress(payload)
+    if not any(k.endswith(".idx") for k in d):
+        raise ValueError("StarDict index missing; archive names: "+repr(sorted(raw)[:25]))
+    if not any(k.endswith((".dict",".dict.dz")) for k in d):
+        raise ValueError("StarDict data missing; archive names: "+repr(sorted(raw)[:25]))
     return d
 
 def extract_glossary(files,limit=170000):
