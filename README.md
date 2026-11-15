@@ -10,7 +10,7 @@
 
 ## What is included?
 
-| Folder | Data source | Release assets | Current initial coverage |
+| Folder | Data source | Release assets | Coverage model |
 |---|---|---|---|
 | [koreader](koreader/README.md) | [DanielGregorini/koreader-dicts](https://github.com/DanielGregorini/koreader-dicts) | KOReader-prefixed StarDict ZIP files | 74 dictionaries |
 | [freedict](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | FreeDict-prefixed StarDict ZIP files | **Auto-discovered all catalogued language pairs**, verified individually |
@@ -54,6 +54,12 @@ The workflow is defined in [Update all dictionary sources](.github/workflows/upd
 A monthly schedule is also configured. For KOReader, the workflow checks the original author's latest release and falls back to an independently maintained [danilfg mirror](https://github.com/danilfg/koreader-dicts/releases) if required. Other families are obtained from their original publishers **only by the build runner**. The process is designed to avoid duplicate new releases when package contents have not changed.
 
 Important: an optional upstream source may fail to download or pass verification. Such failures are logged; they do **not** mean every advertised data source was included. For a definitive list, read the manifest and per-source status of that release.
+
+### Ограничение ответственности за содержание словарей
+
+**Dicts — агрегатор и технический распространитель, а не автор или редакция словарей.** Владелец репозитория не составляет словарные статьи, не осуществляет их сплошную лингвистическую экспертизу и **не гарантирует точность, полноту, актуальность, качество перевода, отсутствие ошибок или пригодность сведений для конкретной цели**. Значения, переводы, примеры и иные сведения публикуются по материалам независимых источников «как есть» (*as is*) в пределах, допускаемых применимым законодательством. Пользователю рекомендуется самостоятельно проверять существенные переводы по первоисточникам.
+
+**Это уведомление не отменяет обязательных требований закона и прав потребителей.** Оно также не исключает обязанностей владельца репозитория по законности перераспространения, соблюдению авторских прав и лицензий, корректности технической упаковки и предоставлению обязательной информации об источниках. Претензии по содержанию исходных словарных статей целесообразно адресовать их правообладателям; сообщения о повреждённых архивах, нарушенной атрибуции или ошибках сборки — через Issues этого репозитория.
 
 ## Licensing, attribution and commercial reuse
 
