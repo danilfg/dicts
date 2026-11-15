@@ -53,6 +53,16 @@
       "license_url": "https://creativecommons.org/licenses/by/2.0/fr/",
       "modification": "Extracted and matched EN-RU text-only sentences; no audio",
       "requirements": "Preserve original sentence IDs, contributor name if provided, link to source, license and change notice"
+    },
+    {
+      "id": "aggregate",
+      "name": "Per-entry multi-source enrichment index",
+      "copyright": "Individual contributing dataset authors and licensed source projects",
+      "source_url": "https://github.com/danilfg/dicts",
+      "license": "MIXED-PER-RECORD; NOT MIT",
+      "license_url": "https://github.com/danilfg/dicts/blob/main/legal/NOTICE.md",
+      "modification": "Metadata-tagged combined index of separate translations, meanings and example sentences",
+      "requirements": "Each contribution retains source and applicable original license. Evaluate copyleft compatibility before downstream adaptation, especially any GPL/GFDL-derived FreeDict entries."
     }
   ]
 }
