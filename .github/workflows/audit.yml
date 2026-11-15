@@ -1,0 +1,26 @@
+name: Audit published dictionary collections
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/audit.yml
+      - src/audit_release.py
+  workflow_dispatch:
+  schedule:
+    - cron: '30 6 1 * *'
+permissions:
+  contents: read
+jobs:
+  audit:
+    if: github.repository == 'danilfg/dicts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate all published releases, sample dictionaries and licensing
+        run: python src/audit_release.py
