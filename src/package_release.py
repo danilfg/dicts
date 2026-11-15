@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -24,7 +25,11 @@ def build(dist):
     bundle=dist/"dicts-all.zip"
     with zipfile.ZipFile(bundle,"w",compression=zipfile.ZIP_STORED,allowZip64=True) as z:
         for name in sorted(expected):
-            z.write(dist/name,arcname="dicts/"+name)
+            info=zipfile.ZipInfo("dicts/"+name,date_time=(1980,1,1,0,0,0))
+            info.compress_type=zipfile.ZIP_STORED
+            info.external_attr=(0o644<<16)
+            with z.open(info,"w",force_zip64=True) as output,(dist/name).open("rb") as source:
+                shutil.copyfileobj(source,output,1024*1024)
     if bundle.stat().st_size>=MAX_BYTES:raise ValueError("Aggregate archive exceeds safe GitHub size limit")
     with zipfile.ZipFile(bundle) as z:
         if {p.removeprefix("dicts/") for p in z.namelist()}!=expected:

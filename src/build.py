@@ -299,7 +299,9 @@ def save_enrichment(out):
         outpath=out/("enrichment--"+pair+".json.gz")
         payload={"schema":1,"pair":pair,"sources":LEGAL,"words":words}
         b=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf8")
-        with gzip.open(outpath,"wb",compresslevel=7) as f:f.write(b)
+        with outpath.open("wb") as output:
+            with gzip.GzipFile(filename="",fileobj=output,mode="wb",mtime=0,compresslevel=7) as zipped:
+                zipped.write(b)
         if outpath.stat().st_size>90_000_000:raise ValueError("Enrichment too large")
         sources=sorted(set(x.get("source") for v in words.values() for key in ("translations","meanings","examples") for x in v[key]))
         record(outpath,"aggregate",pair,"https://github.com/danilfg/dicts",
