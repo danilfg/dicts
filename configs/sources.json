@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "repository": "danilfg/dicts",
+  "koreader": {
+    "repo": "danilfg/koreader-dicts",
+    "tag": "v1.3.0",
+    "expected": 74
+  },
+  "freedict": {
+    "catalog": "https://freedict.org/freedict-database.json",
+    "pairs": [
+      "eng-rus",
+      "rus-eng",
+      "eng-spa",
+      "spa-eng",
+      "eng-deu",
+      "deu-eng"
+    ]
+  },
+  "wikdict": {
+    "dir": "https://download.wikdict.com/dictionaries/stardict/",
+    "pairs": [
+      "en-ru",
+      "ru-en",
+      "en-es",
+      "es-en",
+      "en-de",
+      "de-en"
+    ]
+  },
+  "kaikki": {
+    "url": "https://kaikki.org/simplewiktionary/raw-wiktextract-data.jsonl.gz",
+    "max_phrases": 100000
+  },
+  "tatoeba": {
+    "links": "https://downloads.tatoeba.org/exports/per_language/eng/eng-rus_links.tsv.bz2",
+    "en": "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences_detailed.tsv.bz2",
+    "ru": "https://downloads.tatoeba.org/exports/per_language/rus/rus_sentences_detailed.tsv.bz2",
+    "max_pairs": 30000,
+    "examples_per_word": 2
+  }
+}

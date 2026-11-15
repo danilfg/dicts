@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "project": "danilfg/dicts",
+  "notice": "MIT applies to original build scripts only. All dictionary text, glosses, examples, archives and derived data retain their original licenses.",
+  "families": [
+    {
+      "id": "koreader",
+      "name": "koreader-dicts",
+      "copyright": "Daniel Gregorini and individual upstream source contributors",
+      "source_url": "https://github.com/DanielGregorini/koreader-dicts",
+      "mirror_url": "https://github.com/danilfg/koreader-dicts/releases/tag/v1.3.0",
+      "license": "PER-PACKAGE",
+      "license_url": "https://github.com/DanielGregorini/koreader-dicts/blob/main/README.md",
+      "modification": "Byte-preserving ZIP mirroring; filename prefixed in this release",
+      "requirements": "Preserve embedded LICENSE and ATTRIBUTION unmodified; inspect every ZIP for its license, e.g. CC BY-SA 4.0 or CeCILL-C"
+    },
+    {
+      "id": "freedict",
+      "name": "FreeDict",
+      "copyright": "FreeDict and per-dictionary copyright holders",
+      "source_url": "https://freedict.org/downloads/",
+      "license": "PER-TEI-DICTIONARY",
+      "license_url": "https://freedict.org/documentation/",
+      "modification": "StarDict conversion/repack and optionally separate indexed excerpts",
+      "requirements": "Retain original TEI licensing/copyright/source notices. GPL/GFDL terms may apply. Where terms are ambiguous, quarantine; do not relicense as MIT."
+    },
+    {
+      "id": "wikdict",
+      "name": "WikDict",
+      "copyright": "Karl Bartel; DBnary and Wiktionary contributors",
+      "source_url": "https://www.wikdict.com/page/download",
+      "license": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "modification": "Repacked StarDict with license and attribution notice; filtered glossary indexes",
+      "requirements": "Attribution, source URL, link to license, modification notice and ShareAlike for adapted material"
+    },
+    {
+      "id": "kaikki",
+      "name": "Kaikki / Wiktextract / Wiktionary",
+      "copyright": "Wiktionary contributors; extraction by Tatu Ylonen",
+      "source_url": "https://kaikki.org/simplewiktionary/rawdata.html",
+      "license": "CC-BY-SA-4.0 for eligible text",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "modification": "Selection of textual multi-word expressions from the Simple English Wiktionary",
+      "requirements": "Wiktionary attribution and source page, license link, change notice, share-alike; media excluded"
+    },
+    {
+      "id": "tatoeba",
+      "name": "Tatoeba sentences",
+      "copyright": "Individual Tatoeba contributors",
+      "source_url": "https://tatoeba.org/en/downloads",
+      "license": "CC-BY-2.0-FR or CC0 where expressly identified",
+      "license_url": "https://creativecommons.org/licenses/by/2.0/fr/",
+      "modification": "Extracted and matched EN-RU text-only sentences; no audio",
+      "requirements": "Preserve original sentence IDs, contributor name if provided, link to source, license and change notice"
+    }
+  ]
+}
