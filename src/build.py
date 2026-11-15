@@ -123,14 +123,14 @@ def stardict(raw):
         raise ValueError("StarDict data missing; archive names: "+repr(sorted(raw)[:25]))
     return d
 
-def extract_glossary(files,limit=170000):
+def extract_glossary(files):
     index=next(v for k,v in files.items() if k.endswith(".idx"))
     name=next(k for k in files if k.endswith((".dict",".dict.dz")))
     data=files[name]
     if name.endswith(".dz"):data=gzip.decompress(data)
     result={}
     i=0
-    while i<len(index) and len(result)<limit:
+    while i<len(index):
         j=index.find(b"\0",i)
         if j<0 or j+9>len(index):break
         word=index[i:j].decode("utf8","replace").strip().lower()
