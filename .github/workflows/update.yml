@@ -7,6 +7,7 @@ on:
       - src/build.py
       - configs/sources.json
       - legal/SOURCES.json
+      - src/mirror_raw.py
   workflow_dispatch:
     inputs:
       mode:
@@ -129,3 +130,25 @@ jobs:
           test "$actual" -eq "$count"
           gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
           echo "Release published: https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag"
+
+  raw-text-corpora:
+    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [kaikki, tatoeba]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate full source discovery
+        run: |
+          python -m unittest discover -s tests -v
+      - name: Publish all available upstream text archives, preserving licenses
+        run: |
+          python src/mirror_raw.py --source ${{ matrix.source }}

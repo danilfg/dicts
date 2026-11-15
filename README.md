@@ -13,10 +13,12 @@
 | Folder | Data source | Release assets | Current initial coverage |
 |---|---|---|---|
 | [koreader](koreader/README.md) | [DanielGregorini/koreader-dicts](https://github.com/DanielGregorini/koreader-dicts) | KOReader-prefixed StarDict ZIP files | 74 dictionaries |
-| [freedict](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | FreeDict-prefixed StarDict ZIP files | 6 selected EN/RU/ES/DE directions |
-| [wikdict](wikdict/README.md) | [WikDict](https://www.wikdict.com/page/download) | WikDict-prefixed StarDict ZIP files | 6 selected EN/RU/ES/DE directions |
-| [kaikki](kaikki/README.md) | [Kaikki/Wiktextract](https://kaikki.org/simplewiktionary/rawdata.html), sourced from Wiktionary | Additional definitions and idioms in enrichment JSON.GZ | A selected English-language subset |
-| [tatoeba](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | Text examples in enrichment JSON.GZ | A selected English–Russian subset, no audio |
+| [freedict](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | FreeDict-prefixed StarDict ZIP files | **Auto-discovered all catalogued language pairs**, verified individually |
+| [wikdict](wikdict/README.md) | [WikDict](https://www.wikdict.com/page/download) | WikDict-prefixed StarDict ZIP files | **Every discovered available StarDict language pair** |
+| [kaikki](kaikki/README.md) | [Kaikki/Wiktextract](https://kaikki.org/dictionary/rawdata.html) | Browser enrichment + independent raw text archive release | **All currently discoverable textual Wiktionary editions** in raw release; browser index is separate |
+| [tatoeba](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | Browser enrichment + independent raw text archive release | **Full multilingual sentence/translation exports**; no audio |
+
+Previous releases were **limited previews**. The build now automatically discovers all available FreeDict and WikDict language pairs and attempts them without a fixed six-pair allowlist; source packages that fail validation are shown as skipped in the manifest. The same **Run workflow (all)** button also mirrors **the complete available textual Kaikki Wiktionary editions and Tatoeba's multi-language text exports** to dedicated `raw-kaikki-*` and `raw-tatoeba-*` GitHub Releases. These are full upstream text archives, **not** all converted into browser lookups yet. Audio/media are excluded because their rights and technical distribution are separate. A full archive bigger than 2 GiB is transparently split into numbered parts and reassembled by concatenation. A verified release must have `SOURCE-MANIFEST.json` and original-source attribution. 
 
 This is **not a mirror of every language pair in every project**. Only release files listed in the machine-readable [manifest](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) are guaranteed to be part of a particular snapshot. The previous release was an **initial limited snapshot**, not the whole available corpus. It contained 74 KOReader packages, just 6 FreeDict directions, just 6 WikDict directions, 2,725 Kaikki expressions and 29,983 Tatoeba pairs. The repository is being expanded to automatic source discovery and full-text archives; **do not interpret the current manifest as a complete mirror of every upstream dictionary**. The published manifest, not the general README, records the actual scope.
 
@@ -46,6 +48,8 @@ The workflow is defined in [Update all dictionary sources](.github/workflows/upd
 2. Choose **Run workflow**, branch **main**, and mode **all**. The optional **core** mode limits the build to the required KOReader packages.
 3. GitHub Actions fetches the latest original data, validates checksums where available, retains original licensing evidence, builds language indexes, and publishes a snapshot to Releases.
 4. Verify the successful run and inspect its published manifest for included/omitted sources and individual licensing metadata.
+
+**The single `all` workflow also creates separate raw-text source releases**: [Kaikki full archives](https://github.com/danilfg/dicts/releases?q=raw-kaikki) and [Tatoeba full text](https://github.com/danilfg/dicts/releases?q=raw-tatoeba). These releases are deliberately NOT marked Latest; the main dictionary release remains the default for the browser extension. If a text archive exceeds GitHub's 2-GiB file limit, it is published as sequential `.part001`, `.part002`, etc. The complete original file is reconstructed by joining every part in order. Each raw release ships its own SOURCE-MANIFEST.json and ATTRIBUTION-AND-LICENSE.txt. 
 
 A monthly schedule is also configured. For KOReader, the workflow checks the original author's latest release and falls back to an independently maintained [danilfg mirror](https://github.com/danilfg/koreader-dicts/releases) if required. Other families are obtained from their original publishers **only by the build runner**. The process is designed to avoid duplicate new releases when package contents have not changed.
 
