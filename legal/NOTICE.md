@@ -1,4 +1,4 @@
-# THIRD-PARTY DATA NOTICE / Уведомление о сторонних материалах
+# THIRD-PARTY DATA NOTICE
 
 Copyright in the dictionaries, definitions, word forms, translations, expressions and example sentences belongs to their individual creators and licensors. Distribution via danilfg/dicts is **not** an assignment of copyright, an exclusive license, or an endorsement by those creators.
 
