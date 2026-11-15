@@ -4,7 +4,7 @@
 
 **Dicts** is an independent, publicly accessible collection of offline bilingual dictionaries, translations, idioms, multi-word expressions and example sentences, maintained by [danilfg](https://github.com/danilfg). The goal is to let developers and learners download verified packages from **one GitHub Releases page**, rather than integrating five different hosting services.
 
-**[Download latest release](https://github.com/danilfg/dicts/releases/latest)** | **[Download every package as one ZIP](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip)** | **[Run an update](https://github.com/danilfg/dicts/actions/workflows/update.yml)**
+**[Download latest release](https://github.com/danilfg/dicts/releases/latest)** | **[See all bundle parts](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json)** | **[Run an update](https://github.com/danilfg/dicts/actions/workflows/update.yml)**
 
 > **IMPORTANT — OWNERSHIP AND LICENSES:** Third-party dictionary content **does not become MIT-licensed** when added to this repository. Each source and each original dictionary package retains its original copyright, source attribution and licensing conditions. MIT covers only independently authored automation code and project documentation. This repository is not endorsed by or affiliated with the source projects.
 
@@ -26,7 +26,7 @@ This is **not a mirror of every language pair in every project**. Only release f
 
 | Download | Description |
 |---|---|
-| [**dicts-all.zip**](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip) | **Complete collection in one file**, retaining the independent subarchives, licenses, manifest and legal notices |
+| [**BUNDLE-PARTS.json**](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json) | Lists **all parts** of the collection, with SHA-256 and contents. The complete collection is sharded when it exceeds the maximum single-file size |
 | [koreader--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip) | English to Russian KOReader/StarDict dictionary |
 | [koreader--ru-en.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--ru-en.zip) | Russian to English KOReader/StarDict dictionary |
 | [freedict--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip) | English to Russian FreeDict data |
@@ -36,7 +36,7 @@ This is **not a mirror of every language pair in every project**. Only release f
 | [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) | Integrity checksums of release files |
 | [THIRD-PARTY-NOTICES.md](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) | Release-specific author and license notices |
 
-All ready-to-use files are delivered from **github.com/danilfg/dicts**, not directly from upstream hosts. Upstream URLs are accessed **by GitHub Actions during the build process**. The all-in-one ZIP is a convenience bundle, not a claim that all data share a single license.
+All ready-to-use files are delivered from **github.com/danilfg/dicts**, not directly from upstream hosts. Upstream URLs are accessed **by GitHub Actions during the build process**. Bundled ZIP parts are a convenience compilation, not a claim that all data share a single license. When the collection is small enough there is one `dicts-all.zip`; otherwise download every `dicts-part-NNN.zip` listed in `BUNDLE-PARTS.json`. Large raw Kaikki and Tatoeba archives are in their own raw-source releases.
 
 Dictionary packages use StarDict data that can be read by suitable clients. Supplementary enrichment indexes use JSON.GZ and require an application adapter; they are not standalone StarDict dictionaries. Download size and expanded disk usage differ.
 

@@ -22,7 +22,7 @@ permissions:
   contents: write
 concurrency:
   group: update-dicts
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build-and-release:
     if: github.repository == 'danilfg/dicts'
@@ -88,7 +88,7 @@ jobs:
           test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -ge 74
           test -s dist/THIRD-PARTY-NOTICES.md
           python src/package_release.py --dist dist
-          test -s dist/dicts-all.zip
+          test -s dist/BUNDLE-PARTS.json
           test -s dist/SHA256SUMS.txt
       - name: Check whether content has changed
         id: change

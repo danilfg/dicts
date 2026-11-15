@@ -323,6 +323,10 @@ def save_enrichment(out):
     """Produce one browser index for *every* bilingual pair found in providers."""
     pairs=set(ENRICH)
     pairs.update(r[0] for r in INDEX_DB.execute("SELECT DISTINCT pair FROM translations"))
+    first_level={a["pair"] for a in ASSETS if a["source"]=="koreader"}
+    # Browser-loadable indexes for every KOReader pair; other indexes are
+    # distributed together in numbered archives to remain below 1000 assets.
+    secondary=[]
     for pair in sorted(pairs):
         words=ENRICH.pop(pair,{})
         sources=set()
@@ -352,9 +356,30 @@ def save_enrichment(out):
         if outpath.stat().st_size>90_000_000:
             raise ValueError("Enrichment too large for browser: "+pair+
                 "; use the separate source ZIPs or publish sharded indexes")
-        record(outpath,"aggregate",pair,"https://github.com/danilfg/dicts",
-               "MIXED-PER-ENTRY: "+", ".join(sorted(sources)),"1",True,
-               "Each entry retains upstream source and attribution; see THIRD-PARTY-NOTICES.md")
+        if pair in first_level:
+            record(outpath,"aggregate",pair,"https://github.com/danilfg/dicts",
+                   "MIXED-PER-ENTRY: "+", ".join(sorted(sources)),"1",True,
+                   "Each entry retains upstream source and attribution; see THIRD-PARTY-NOTICES.md")
+        else:
+            secondary.append(outpath)
+    if secondary:
+        for k in range(0,len(secondary),40):
+            group=secondary[k:k+40]
+            dest=out/("enrichments-extra--%03d.zip"%(k//40+1))
+            with zipfile.ZipFile(dest,"w",compression=zipfile.ZIP_STORED) as z:
+                for item in group:z.write(item,item.name)
+                z.writestr("ATTRIBUTION.txt",
+                    "Mixed independently licensed records. Each JSON.GZ embeds its "+
+                    "source registry and each entry's provenance; "+
+                    "see THIRD-PARTY-NOTICES.md and legal/NOTICE.md.")
+            zip_members(dest)
+            record(dest,"aggregate","multi",
+                "https://github.com/danilfg/dicts",
+                "MIXED-PER-ENTRY; see embedded record.source and legal/SOURCES.json",
+                "1",True,"Original authors/source metadata embedded in each indexed record")
+            for item in group:item.unlink()
+        SOURCE_STATUSES["extra_enrichment_packs"]={"status":"included",
+            "packs":(len(secondary)+39)//40,"language_pairs":len(secondary)}
 
 def main():
     ap=argparse.ArgumentParser()
@@ -388,7 +413,7 @@ def main():
             raise ValueError("Artifact SHA mismatch: "+a["name"])
     report={"schema":1,"repository":"danilfg/dicts",
       "generated_at":dt.datetime.now(dt.timezone.utc).isoformat(),
-      "bundle_format":1,"bundle_name":"dicts-all.zip",
+      "bundle_format":2,"bundle_name":"BUNDLE-PARTS.json",
       "mode":args.mode,"source_status":SOURCE_STATUSES,
       "assets":ASSETS,"legal":LEGAL,
       "notice":"Original licenses per asset; MIT only for our code."}
