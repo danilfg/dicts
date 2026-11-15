@@ -1,0 +1,97 @@
+name: Update all dictionary sources
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update.yml
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "all = KOReader plus extras; core = verified KOReader only"
+        type: choice
+        required: true
+        options: [all, core]
+        default: all
+  schedule:
+    - cron: '0 4 1 * *'
+permissions:
+  contents: write
+concurrency:
+  group: update-dicts
+  cancel-in-progress: false
+jobs:
+  build-and-release:
+    if: github.repository == 'danilfg/dicts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ inputs.mode || 'all' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source code and licensing fixtures
+        run: |
+          python -m compileall -q src tests
+          python -m unittest discover -s tests -v
+      - name: Download source archives from owned KOReader mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p upstream
+          gh release download v1.3.0 --repo danilfg/koreader-dicts \
+            --pattern '*.zip' --dir upstream
+          gh release download v1.3.0 --repo danilfg/koreader-dicts \
+            --pattern SHA256SUMS --dir upstream
+          ( cd upstream && sha256sum -c SHA256SUMS )
+          test "$(find upstream -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 74
+      - name: Build dictionaries, enrichments and legal manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/build.py --upstream upstream --out dist --mode "$MODE"
+          python -m json.tool dist/manifest.json >/dev/null
+          test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -eq 74
+          test -s dist/THIRD-PARTY-NOTICES.md
+      - name: Check whether content has changed
+        id: change
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          mkdir -p previous
+          if gh release download --repo "$GITHUB_REPOSITORY" \
+               --pattern manifest.json --dir previous >/dev/null 2>&1; then
+            if python - <<'PY'
+          import json
+          old=json.load(open('previous/manifest.json'))
+          new=json.load(open('dist/manifest.json'))
+          signature=lambda x: sorted((a['name'],a['sha256']) for a in x['assets'])
+          raise SystemExit(0 if signature(old)==signature(new) else 1)
+          PY
+            then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "No content changes since latest release."
+            fi
+          fi
+      - name: Publish independently licensed snapshot
+        if: steps.change.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')"
+          test "$count" -le 1000
+          find dist -maxdepth 1 -type f -size +1900M -print -quit | \
+            { read -r big && { echo "::error::Too large: $big"; exit 1; } || true; }
+          tag="data-$(date -u +'%Y%m%d-%H%M%S')"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --draft \
+            --title "Dicts licensed snapshot $tag" \
+            --notes "Independent licensed packages; review manifest.json and THIRD-PARTY-NOTICES.md for exact source coverage and per-asset rights."
+          gh release upload "$tag" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          actual="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets | length')"
+          test "$actual" -eq "$count"
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "Release published: https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag"
