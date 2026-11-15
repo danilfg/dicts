@@ -335,6 +335,7 @@ def main():
             raise ValueError("Artifact SHA mismatch: "+a["name"])
     report={"schema":1,"repository":"danilfg/dicts",
       "generated_at":dt.datetime.now(dt.timezone.utc).isoformat(),
+      "bundle_format":1,"bundle_name":"dicts-all.zip",
       "mode":args.mode,"source_status":SOURCE_STATUSES,
       "assets":ASSETS,"legal":LEGAL,
       "notice":"Original licenses per asset; MIT only for our code."}

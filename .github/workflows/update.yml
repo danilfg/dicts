@@ -86,6 +86,9 @@ jobs:
           python -m json.tool dist/manifest.json >/dev/null
           test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -ge 74
           test -s dist/THIRD-PARTY-NOTICES.md
+          python src/package_release.py --dist dist
+          test -s dist/dicts-all.zip
+          test -s dist/SHA256SUMS.txt
       - name: Check whether content has changed
         id: change
         shell: bash
@@ -100,7 +103,7 @@ jobs:
           old=json.load(open('previous/manifest.json'))
           new=json.load(open('dist/manifest.json'))
           signature=lambda x: sorted((a['name'],a['sha256']) for a in x['assets'])
-          raise SystemExit(0 if signature(old)==signature(new) else 1)
+          raise SystemExit(0 if signature(old)==signature(new) and old.get('bundle_format')==new.get('bundle_format') else 1)
           PY
             then
               echo "changed=false" >> "$GITHUB_OUTPUT"

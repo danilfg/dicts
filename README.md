@@ -20,6 +20,8 @@
 
 Перейдите в [Releases → Latest](https://github.com/danilfg/dicts/releases/latest). После первой успешной сборки:
 
+- [**dicts-all.zip — вся коллекция одним архивом**](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip) — упаковка всех отдельных словарных архивов, индексов, manifest.json и THIRD-PARTY-NOTICES.md. Отдельные пакеты сохраняют свои лицензии; это НЕ единый новый лицензированный словарь.
+- [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) — SHA-256 каждого опубликованного файла, включая полный архив.
 - [EN-RU KOReader (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip)
 - [RU-EN KOReader (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/koreader--ru-en.zip)
 - [EN-RU FreeDict (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip) — только если опубликован
