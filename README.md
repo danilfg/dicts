@@ -1,73 +1,105 @@
-# Dicts — независимый каталог открытых словарей
+# Dicts — Unified Offline Dictionary Distribution
 
-**danilfg/dicts** — публичный агрегатор офлайн-словарей, выражений и примеров употребления. Бинарные пакеты публикуются в [GitHub Releases](https://github.com/danilfg/dicts/releases), а код и информация об источниках хранятся здесь. Проект не связан официально с KOReader, FreeDict, WikDict, Wiktionary, Kaikki или Tatoeba.
+**Dicts** is an independent, publicly accessible collection of offline bilingual dictionaries, translations, idioms, multi-word expressions and example sentences, maintained by [danilfg](https://github.com/danilfg). The goal is to let developers and learners download verified packages from **one GitHub Releases page**, rather than integrating five different hosting services.
 
-**Ключевой принцип:** MIT применяется к собственному коду автоматизации, но НЕ к сторонним словарным данным. Каждый пакет сохраняет свою лицензию, указание авторства, ссылку на первоисточник и сведения об изменениях. Выбор пакета и обязанность соблюдать его лицензию остаются за пользователем.
+**[Download latest release](https://github.com/danilfg/dicts/releases/latest)** | **[Download every package as one ZIP](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip)** | **[Run an update](https://github.com/danilfg/dicts/actions/workflows/update.yml)**
 
-## Что входит
+> **IMPORTANT — OWNERSHIP AND LICENSES:** Third-party dictionary content **does not become MIT-licensed** when added to this repository. Each source and each original dictionary package retains its original copyright, source attribution and licensing conditions. MIT covers only independently authored automation code and project documentation. This repository is not endorsed by or affiliated with the source projects.
 
-| Подкаталог | Источник | Файлы в релизе | Покрытие первой версии |
+## What is included?
+
+| Folder | Data source | Release assets | Current initial coverage |
 |---|---|---|---|
-| [koreader/](koreader/README.md) | [DanielGregorini/koreader-dicts](https://github.com/DanielGregorini/koreader-dicts), резервная копия [danilfg/koreader-dicts](https://github.com/danilfg/koreader-dicts) | koreader--XX-YY.zip | 74 языковых пакета из v1.3.0 |
-| [freedict/](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | freedict--XX-YY.zip | EN/RU/ES/DE: 6 выбранных направлений |
-| [wikdict/](wikdict/README.md) | [WikDict](https://www.wikdict.com/page/download) | wikdict--XX-YY.zip | EN/RU/ES/DE: 6 выбранных направлений |
-| [kaikki/](kaikki/README.md) | [Kaikki / Wiktextract / Wiktionary](https://kaikki.org/simplewiktionary/rawdata.html) | индекс значений и выражений в enrichment--en-ru.json.gz | компактная выборка англоязычных выражений |
-| [tatoeba/](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | примеры в enrichment--en-ru.json.gz | выборка текстовых EN–RU предложений без аудио |
+| [koreader](koreader/README.md) | [DanielGregorini/koreader-dicts](https://github.com/DanielGregorini/koreader-dicts) | KOReader-prefixed StarDict ZIP files | 74 dictionaries |
+| [freedict](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | FreeDict-prefixed StarDict ZIP files | 6 selected EN/RU/ES/DE directions |
+| [wikdict](wikdict/README.md) | [WikDict](https://www.wikdict.com/page/download) | WikDict-prefixed StarDict ZIP files | 6 selected EN/RU/ES/DE directions |
+| [kaikki](kaikki/README.md) | [Kaikki/Wiktextract](https://kaikki.org/simplewiktionary/rawdata.html), sourced from Wiktionary | Additional definitions and idioms in enrichment JSON.GZ | A selected English-language subset |
+| [tatoeba](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | Text examples in enrichment JSON.GZ | A selected English–Russian subset, no audio |
 
-Число пакетов из дополнительных источников зависит от проверки форматов, лицензий и доступности конкретных исходных архивов. **Ни одна из этих таблиц не утверждает, что включены все языки всех поставщиков.** В manifest.json перечислены только фактически опубликованные материалы; отчёт о пропусках находится в source_status.
+This is **not a mirror of every language pair in every project**. Only release files listed in the machine-readable [manifest](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) are guaranteed to be part of a particular snapshot. A successfully verified initial snapshot included 74 KOReader ZIP files, 6 FreeDict ZIP files, 6 WikDict ZIP files, 6 enrichment indexes, 2,725 selected Kaikki expressions and 29,983 Tatoeba sentence pairs. Future coverage will depend on source updates and legal/format verification.
 
-## Скачать словари
+## Download the collection
 
-Перейдите в [Releases → Latest](https://github.com/danilfg/dicts/releases/latest). После первой успешной сборки:
+| Download | Description |
+|---|---|
+| [**dicts-all.zip**](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip) | **Complete collection in one file**, retaining the independent subarchives, licenses, manifest and legal notices |
+| [koreader--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip) | English to Russian KOReader/StarDict dictionary |
+| [koreader--ru-en.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--ru-en.zip) | Russian to English KOReader/StarDict dictionary |
+| [freedict--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip) | English to Russian FreeDict data |
+| [wikdict--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/wikdict--en-ru.zip) | English to Russian WikDict data |
+| [enrichment--en-ru.json.gz](https://github.com/danilfg/dicts/releases/latest/download/enrichment--en-ru.json.gz) | Extra meanings, multi-word expressions and example sentences |
+| [manifest.json](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) | Asset list, sources, versions, sizes, checksums, attribution and license metadata |
+| [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) | Integrity checksums of release files |
+| [THIRD-PARTY-NOTICES.md](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) | Release-specific author and license notices |
 
-- [**dicts-all.zip — вся коллекция одним архивом**](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip) — упаковка всех отдельных словарных архивов, индексов, manifest.json и THIRD-PARTY-NOTICES.md. Отдельные пакеты сохраняют свои лицензии; это НЕ единый новый лицензированный словарь.
-- [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) — SHA-256 каждого опубликованного файла, включая полный архив.
-- [EN-RU KOReader (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip)
-- [RU-EN KOReader (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/koreader--ru-en.zip)
-- [EN-RU FreeDict (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip) — только если опубликован
-- [EN-RU WikDict (ZIP)](https://github.com/danilfg/dicts/releases/latest/download/wikdict--en-ru.zip) — только если опубликован
-- [Индекс контекста (JSON.GZ)](https://github.com/danilfg/dicts/releases/latest/download/enrichment--en-ru.json.gz)
-- [manifest.json](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) — контрольные суммы, размеры, происхождение, лицензии
-- [THIRD-PARTY-NOTICES.md](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) — список уведомлений об авторском праве
+All ready-to-use files are delivered from **github.com/danilfg/dicts**, not directly from upstream hosts. Upstream URLs are accessed **by GitHub Actions during the build process**. The all-in-one ZIP is a convenience bundle, not a claim that all data share a single license.
 
-**Загрузка из приложения происходит только с GitHub danilfg/dicts.** Прямые обращения к FreeDict, WikDict и другим сайтам происходят исключительно во время сборки на стороне GitHub Actions.
+Dictionary packages use StarDict data that can be read by suitable clients. Supplementary enrichment indexes use JSON.GZ and require an application adapter; they are not standalone StarDict dictionaries. Download size and expanded disk usage differ.
 
-Формат ZIP совместим с потребителями StarDict, если их парсер поддерживает фактическую структуру архива. Индекс JSON.GZ — отдельный формат для разработчиков. SHA-256 из manifest.json позволяет проверить скачанные файлы. Устанавливаемый размер может быть больше размера ZIP.
+## Update every source with one button
 
-## Обновить всё одной кнопкой
+The workflow is defined in [Update all dictionary sources](.github/workflows/update.yml).
 
-Откройте [Actions → Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml) и нажмите **Run workflow**. Выберите ветку main и режим all. Процесс получает свежие данные на GitHub runner, проверяет источники/уведомления/контрольные суммы и создаёт новый Release. Старые релизы остаются доступны.
+1. Open [Actions / Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml).
+2. Choose **Run workflow**, branch **main**, and mode **all**. The optional **core** mode limits the build to the required KOReader packages.
+3. GitHub Actions fetches the latest original data, validates checksums where available, retains original licensing evidence, builds language indexes, and publishes a snapshot to Releases.
+4. Verify the successful run and inspect its published manifest for included/omitted sources and individual licensing metadata.
 
-Workflow также может работать ежемесячно. Если обязательный пакет не прошёл проверку, новый набор не публикуется. Необязательные источники фиксируются как включённые или пропущенные с причиной в отчёте. Различайте успешное выполнение GitHub Actions и фактический список включённых источников в manifest.json.
+A monthly schedule is also configured. For KOReader, the workflow checks the original author's latest release and falls back to an independently maintained [danilfg mirror](https://github.com/danilfg/koreader-dicts/releases) if required. Other families are obtained from their original publishers **only by the build runner**. The process is designed to avoid duplicate new releases when package contents have not changed.
 
-Репозиторий содержит код, конфигурацию, документацию, лицензионные реестры и тесты; большие словари находятся только в Releases, не в Git-истории. Содержание и состав данных можно расширять через configs/sources.json и конвертер, но добавление пакета не отменяет отдельную проверку лицензии.
+Important: an optional upstream source may fail to download or pass verification. Such failures are logged; they do **not** mean every advertised data source was included. For a definitive list, read the manifest and per-source status of that release.
 
-## Права и условия использования
+## Licensing, attribution and commercial reuse
 
-**Словарные статьи не становятся собственностью владельца этого GitHub-репозитория.** Право скачивания не заменяет лицензию конкретного источника.
+**A compilation is not a relicensing.** Each family has individual rights, and some individual dictionary packages have different terms from others in the same family.
 
-| Семейство | Можно ли использовать в коммерческом приложении? | Обязательства при перераспространении |
+| Source | Commercial use | Obligations and limits |
 |---|---|---|
-| KOReader dictionaries | Зависит от конкретного пакета | Смотрите LICENSE и ATTRIBUTION внутри ZIP: встречаются CC BY-SA 4.0, CeCILL-C и другие. Сохраняйте исходные уведомления, ссылку на источник и применимые условия |
-| FreeDict | В принципе свободные лицензии допускают коммерческие сценарии при соблюдении условий, но каждый словарь лицензируется отдельно | Читайте лицензию в TEI-заголовке: могут действовать GPL/GFDL. Сохраняйте уведомления об авторах, применимые лицензионные тексты, исходники или сведения о получении соответствующих исходников и изменения |
-| WikDict | CC BY-SA допускает коммерческое использование | Указывайте WikDict/Karl Bartel, DBnary и Wiktionary contributors, лицензию, источник и факт преобразования; для адаптированных данных выполняйте ShareAlike |
-| Kaikki/Wiktionary | Как правило, текст CC BY-SA 4.0 допускает коммерческое использование | Атрибуция Wiktionary contributors, ссылка на соответствующие записи/лицензию, указание изменений, ShareAlike; отдельно лицензируемые медиа не включаются |
-| Tatoeba | Текст CC BY 2.0 France допускает коммерческое использование; часть предложений CC0 | Указывайте исходный ID и URL предложения, автора при наличии, лицензию; для аудио отдельные права — здесь аудио отсутствует |
+| KOReader packages | Depends on the **specific ZIP**; packages have distinct licenses, including CC BY-SA and CeCILL-C | Inspect and retain embedded LICENSE and ATTRIBUTION, link to the original source, keep any required derivative/share-alike notices |
+| FreeDict | Some GPL/GFDL-based packages allow commercial redistribution when their conditions are satisfied | **Read each dictionary's TEI rights header**; maintain attribution, full applicable license statements and any corresponding-source obligations; check mixed-license compatibility |
+| WikDict | CC BY-SA allows commercial use with conditions | Credit Karl Bartel/WikDict, DBnary and Wiktionary contributors as applicable; link to source and license; identify modifications and satisfy ShareAlike for adaptations |
+| Kaikki/Wiktionary | Eligible text is generally CC BY-SA 4.0, which permits commercial use subject to obligations | Credit Wiktionary contributors, source entries, license, and modifications. Separately licensed media are not distributed here |
+| Tatoeba | Text entries can carry CC BY 2.0 France or explicitly designated CC0 terms | Preserve sentence IDs, source links, author credits and applicable license conditions. No Tatoeba audio is distributed |
+| Dicts original build scripts | MIT | Keep the MIT notice on the original project code; **MIT does not cover the redistributed dictionaries** |
 
-Нельзя автоматически объединять материалы под MIT, выдавать их за собственную оригинальную словарную базу или ограничивать права получателей вопреки лицензии. Объединение GPL/GFDL и CC BY-SA в производный единый набор может требовать юридической проверки совместимости; исходные независимые пакеты не переименовываются в одну лицензию. Описание лицензий не гарантирует, что любой сценарий коммерческого использования разрешён.
+**Do not assume you may:**
+- Label all included data MIT, public domain, or proprietary;
+- Remove source copyright/attribution records;
+- Prevent downstream recipients from exercising CC BY-SA rights on original or adapted content;
+- Treat availability on GitHub as permission to redistribute material under any desired terms;
+- Claim the original projects endorse your application;
+- Combine GPL/GFDL/CC BY-SA datasets into a new derivative database without assessing license compatibility.
 
-**Информация о правах:** [legal/NOTICE.md](legal/NOTICE.md), [legal/SOURCES.json](legal/SOURCES.json), [docs/LEGAL-REVIEW-CHECKLIST.md](docs/LEGAL-REVIEW-CHECKLIST.md). В опубликованном релизе manifest.json и THIRD-PARTY-NOTICES.md дают сведения по **каждому** файлу. Это сведения об условиях публичных лицензий, не индивидуальное юридическое заключение.
+Creative Commons Attribution-ShareAlike licenses can permit **paid commercial applications** and redistribution, but attribution, change notices and adapted-data ShareAlike obligations remain enforceable. Other packages may impose different or additional requirements. Selling independent software features does not confer exclusive rights to third-party dictionary text.
 
-## Разработчикам
+**Consult the original license and, for a proposed commercial combined database, qualified counsel.** These repository notices are a compliance aid and do not replace legal advice.
 
-В manifest.json у файла предусмотрены поля имени, источника, языковой пары, размера, SHA-256, лицензионного идентификатора/обоснования, версии, URL первоисточника и признака изменения. У обогащённых записей сохраняется источник конкретного значения или предложения. Приложения могут показывать определения и контекст вместе с источником атрибуции.
+Detailed documents:
+- [Legal NOTICE](legal/NOTICE.md) — copyright, upstream authors, license separation and modifications.
+- [Source licensing registry](legal/SOURCES.json) — machine-readable data-family provenance, licensing and required notices.
+- [Release legal review checklist](docs/LEGAL-REVIEW-CHECKLIST.md) — checks before republishing or selling an integrated product.
+- [Release-specific THIRD-PARTY-NOTICES](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) — details for each actually published asset.
+- The original LICENSE/ATTRIBUTION/TEI rights declarations included in individual archives.
 
-Структура:
-- configs/ — версии, источники и выбор языковых пар
-- src/ — автоматическая сборка и валидация
-- tests/ — локальные проверки
-- koreader/, freedict/, wikdict/, kaikki/, tatoeba/ — документация по источникам
-- legal/ — информация об авторских правах, матрица условий
-- .github/workflows/ — публикация релизов по кнопке
+## Repository layout
 
-**Обратная связь:** создайте GitHub Issue с именем пакета, ссылкой на соответствующее слово/предложение и описанием проблемы. Данные предоставляются «как есть», без гарантии точности перевода. Проект независимый и не поддерживается официально правообладателями исходных словарей.
+    dicts/
+      .github/workflows/update.yml   Update-and-publish GitHub Action
+      configs/sources.json           Configured upstream sources and language pairs
+      src/build.py                   Downloading, checking and assembling indexes
+      src/package_release.py         Combined ZIP and checksum generation
+      tests/                         Build tests
+      koreader/ freedict/ wikdict/    Dictionary source documentation
+      kaikki/ tatoeba/               Expression and example data documentation
+      legal/NOTICE.md                Copyright and third-party rights
+      legal/SOURCES.json             Source and licensing registry
+      docs/LEGAL-REVIEW-CHECKLIST.md
+      LICENSE                        MIT license for original project code only
+
+## Information for developers
+
+Each release includes a manifest with the actual asset names, language pairs, source URLs, version information, SHA-256 digests, modification status and per-asset license evidence. The enrichment format also retains original source metadata per translation, meaning and example, allowing applications to display credits beside the data.
+
+Developers should choose only the language pairs they need, verify downloaded files against their checksums, read the corresponding licenses, and preserve attribution when distributing or showing text. Using a StarDict reader does not automatically support the separate enrichment JSON.GZ format.
+
+**Issue reporting:** [Open an issue](https://github.com/danilfg/dicts/issues) with the affected package, exact dictionary entry, upstream source or Tatoeba sentence ID. Data are distributed as-is, with no warranty of completeness or accuracy.
