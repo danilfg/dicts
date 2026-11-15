@@ -4,7 +4,9 @@
   "koreader": {
     "repo": "danilfg/koreader-dicts",
     "tag": "v1.3.0",
-    "expected": 74
+    "expected": 74,
+    "mode": "latest upstream with owned fork fallback",
+    "minimum": 74
   },
   "freedict": {
     "catalog": "https://freedict.org/freedict-database.json",

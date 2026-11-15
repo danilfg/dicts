@@ -63,9 +63,14 @@ def zip_members(path):
         return z.namelist()
 
 def mirror_koreader(out,upstream):
+    info_path=upstream/"SOURCE_INFO.json"
+    info=json.loads(info_path.read_text()) if info_path.exists() else {}
     files=sorted(upstream.glob("*.zip"))
-    expected=CONFIG["koreader"]["expected"]
-    if len(files)!=expected:raise ValueError("Expected %d KOReader ZIPs; found %d"%(expected,len(files)))
+    expected=int(info.get("expected",CONFIG["koreader"]["expected"]))
+    if expected<CONFIG["koreader"]["expected"] or len(files)!=expected:
+        raise ValueError("Expected %d or more verified KOReader ZIPs; found %d"%(expected,len(files)))
+    source_repo=info.get("repository",CONFIG["koreader"]["repo"])
+    source_tag=info.get("tag",CONFIG["koreader"]["tag"])
     for f in files:
         with zipfile.ZipFile(f) as z:
             if z.testzip():raise ValueError("Corrupt ZIP: "+f.name)
@@ -81,8 +86,8 @@ def mirror_koreader(out,upstream):
         dest=out/("koreader--"+f.name)
         shutil.copyfile(f,dest)   # exact original bytes; license and attribution stay inside
         record(dest,"koreader",f.stem,
-               "https://github.com/danilfg/koreader-dicts/releases/tag/"+CONFIG["koreader"]["tag"],
-               tag,CONFIG["koreader"]["tag"],False,
+               "https://github.com/"+source_repo+"/releases/tag/"+source_tag,
+               tag,source_tag,False,
                "Daniel Gregorini and original contributors; embedded LICENSE and ATTRIBUTION")
     SOURCE_STATUSES["koreader"]={"status":"included","archives":len(files)}
     print("KOREADER",len(files),flush=True)

@@ -44,19 +44,47 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p upstream
-          gh release download v1.3.0 --repo danilfg/koreader-dicts \
-            --pattern '*.zip' --dir upstream
-          gh release download v1.3.0 --repo danilfg/koreader-dicts \
-            --pattern SHA256SUMS --dir upstream
-          ( cd upstream && sha256sum -c SHA256SUMS )
-          test "$(find upstream -maxdepth 1 -type f -name '*.zip' | wc -l)" -eq 74
+          remote="DanielGregorini/koreader-dicts"
+          tag=""
+          if tag=$(gh release view --repo "$remote" --json tagName --jq .tagName 2>/dev/null) &&
+             gh release download "$tag" --repo "$remote" --pattern '*.zip' --dir upstream; then
+            echo "Source: original author release $remote $tag"
+          else
+            echo "::warning::Original release unavailable; using independently mirrored fallback"
+            rm -f upstream/*.zip
+            remote="danilfg/koreader-dicts"
+            tag="v1.3.0"
+            gh release download "$tag" --repo "$remote" --pattern '*.zip' --dir upstream
+            gh release download "$tag" --repo "$remote" --pattern SHA256SUMS --dir upstream
+            ( cd upstream && sha256sum -c SHA256SUMS )
+          fi
+          REMOTE="$remote" TAG="$tag" python - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          repo=os.environ['REMOTE'];tag=os.environ['TAG']
+          release=json.loads(subprocess.check_output(
+              ['gh','api',f'repos/{repo}/releases/tags/{tag}']))
+          zipassets=[x for x in release['assets'] if x['name'].endswith('.zip')]
+          if len(zipassets)<74:raise SystemExit('Too few source dictionaries')
+          for asset in zipassets:
+              path=Path('upstream')/asset['name']
+              if not path.is_file():raise SystemExit(f'Missing archive {asset["name"]}')
+              digest=asset.get('digest')
+              if digest and digest.startswith('sha256:'):
+                  got=hashlib.sha256(path.read_bytes()).hexdigest()
+                  if got!=digest.split(':',1)[1]:
+                      raise SystemExit(f'Upstream SHA-256 mismatch: {asset["name"]}')
+          (Path('upstream')/'SOURCE_INFO.json').write_text(
+              json.dumps({'repository':repo,'tag':tag,'expected':len(zipassets)}))
+          print(f'Verified {len(zipassets)} original archive files from {repo}@{tag}')
+          PY
       - name: Build dictionaries, enrichments and legal manifests
         shell: bash
         run: |
           set -euo pipefail
           python src/build.py --upstream upstream --out dist --mode "$MODE"
           python -m json.tool dist/manifest.json >/dev/null
-          test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -eq 74
+          test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -ge 74
           test -s dist/THIRD-PARTY-NOTICES.md
       - name: Check whether content has changed
         id: change
