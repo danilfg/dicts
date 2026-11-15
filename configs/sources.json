@@ -10,25 +10,13 @@
   },
   "freedict": {
     "catalog": "https://freedict.org/freedict-database.json",
-    "pairs": [
-      "eng-rus",
-      "rus-eng",
-      "eng-spa",
-      "spa-eng",
-      "eng-deu",
-      "deu-eng"
-    ]
+    "pairs": "all",
+    "discovery": "All available entries in upstream catalog are attempted (licensing verified per source TEI)."
   },
   "wikdict": {
     "dir": "https://download.wikdict.com/dictionaries/stardict/",
-    "pairs": [
-      "en-ru",
-      "ru-en",
-      "en-es",
-      "es-en",
-      "en-de",
-      "de-en"
-    ]
+    "pairs": "all",
+    "discovery": "All wikdict-XX-YY.zip files in the published StarDict directory are discovered automatically."
   },
   "kaikki": {
     "url": "https://kaikki.org/simplewiktionary/raw-wiktextract-data.jsonl.gz",

@@ -10,6 +10,8 @@ import hashlib
 import html
 import io
 import json
+import sqlite3
+from html.parser import HTMLParser
 import re
 import shutil
 import struct
@@ -28,6 +30,13 @@ USER_AGENT="Dicts-source-sync/0.1 (github.com/danilfg/dicts)"
 SOURCE_STATUSES={}
 ASSETS=[]
 ENRICH=defaultdict(dict)
+INDEX_DB=None
+def init_index(out):
+    global INDEX_DB
+    INDEX_DB=sqlite3.connect(str(out/'_enrich.sqlite3'))
+    INDEX_DB.execute("PRAGMA journal_mode=MEMORY")
+    INDEX_DB.execute("PRAGMA synchronous=OFF")
+    INDEX_DB.execute("CREATE TABLE IF NOT EXISTS translations (pair TEXT NOT NULL, word TEXT NOT NULL, source TEXT NOT NULL, meaning TEXT NOT NULL, PRIMARY KEY(pair,word,source)) WITHOUT ROWID")
 
 def urlopen(url):
     return urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":USER_AGENT}),timeout=120)
@@ -135,13 +144,14 @@ def extract_glossary(files,limit=170000):
     return result
 
 def merge(pair,glossary,source):
-    words=ENRICH[pair]
-    for word,value in glossary.items():
-        entry=words.setdefault(word,{"translations":[],"meanings":[],"examples":[]})
-        if len(entry["translations"])>=4:continue
-        if not any(x["text"]==value for x in entry["translations"]):
-            entry["translations"].append({"text":value,"source":source,
-              "source_url":LEGAL[source]["source_url"]})
+    """Store *all* published bilingual meanings without a language-pair whitelist.
+    SQLite prevents hundreds of available language pairs exhausting RAM.
+    """
+    if not glossary:return
+    if INDEX_DB is None:raise ValueError("Enrichment index is not initialized")
+    INDEX_DB.executemany("INSERT OR REPLACE INTO translations(pair,word,source,meaning) VALUES(?,?,?,?)",
+        ((pair,word,source,value) for word,value in glossary.items() if word and value))
+    INDEX_DB.commit()
 
 def package_zip(path,files,license_text,notice,source_archive=None):
     with zipfile.ZipFile(path,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
@@ -158,8 +168,9 @@ def build_freedict(out):
     cfg=CONFIG["freedict"]
     catalog={x["name"]:x for x in json.loads(read_url(cfg["catalog"],20_000_000)) if isinstance(x,dict) and x.get("name")}
     codes={"eng":"en","rus":"ru","spa":"es","deu":"de"}
+    requested=sorted(catalog) if cfg.get("pairs")=="all" else cfg.get("pairs",[])
     successes=0
-    for name in cfg["pairs"]:
+    for name in requested:
         try:
             item=catalog[name]
             formats={x["platform"]:x for x in item["releases"]}
@@ -196,12 +207,27 @@ def build_freedict(out):
         except Exception as e:
             SOURCE_STATUSES["freedict:"+name]={"status":"skipped","reason":str(e)[:350]}
             print("FREEDICT SKIPPED",name,str(e)[:300],flush=True)
-    SOURCE_STATUSES["freedict"]={"status":"included" if successes==len(cfg["pairs"]) else "partial",
-                                  "included":successes,"requested":len(cfg["pairs"])}
+    SOURCE_STATUSES["freedict"]={"status":"included" if successes==len(requested) else "partial",
+                                  "included":successes,"discovered":len(requested),"requested":"all available"}
+
+class WikiZipLinks(HTMLParser):
+    def __init__(self):
+        super().__init__();self.names=set()
+    def handle_starttag(self,tag,attrs):
+        if tag!="a":return
+        href=dict(attrs).get("href","")
+        match=re.fullmatch(r"wikdict-([a-z0-9]+-[a-z0-9]+)\.zip",href,re.I)
+        if match:self.names.add(match.group(1).lower())
 
 def build_wikdict(out):
     cfg=CONFIG["wikdict"];count=0
-    for pair in cfg["pairs"]:
+    if cfg.get("pairs")=="all":
+        parser=WikiZipLinks()
+        parser.feed(read_url(cfg["dir"],2_000_000).decode("utf8","replace"))
+        requested=sorted(parser.names)
+        if not requested:raise ValueError("WikDict directory did not list any ZIP packages")
+    else:requested=cfg.get("pairs",[])
+    for pair in requested:
         url=cfg["dir"]+"wikdict-"+pair+".zip"
         try:
             b=read_url(url,100_000_000)
@@ -221,8 +247,8 @@ def build_wikdict(out):
         except Exception as e:
             SOURCE_STATUSES["wikdict:"+pair]={"status":"skipped","reason":str(e)[:350]}
             print("WIKDICT SKIPPED",pair,str(e)[:300],flush=True)
-    SOURCE_STATUSES["wikdict"]={"status":"included" if count==len(cfg["pairs"]) else "partial",
-                                "included":count,"requested":len(cfg["pairs"])}
+    SOURCE_STATUSES["wikdict"]={"status":"included" if count==len(requested) else "partial",
+                                "included":count,"discovered":len(requested),"requested":"all available"}
 
 def build_kaikki():
     c=CONFIG["kaikki"]
@@ -294,19 +320,41 @@ def build_tatoeba():
     SOURCE_STATUSES["tatoeba"]={"status":"included","sentence_pairs":count}
 
 def save_enrichment(out):
-    for pair,words in ENRICH.items():
+    """Produce one browser index for *every* bilingual pair found in providers."""
+    pairs=set(ENRICH)
+    pairs.update(r[0] for r in INDEX_DB.execute("SELECT DISTINCT pair FROM translations"))
+    for pair in sorted(pairs):
+        words=ENRICH.pop(pair,{})
+        sources=set()
+        for word,source,meaning in INDEX_DB.execute(
+                "SELECT word,source,meaning FROM translations WHERE pair=? ORDER BY word",(pair,)):
+            entry=words.setdefault(word,{"translations":[],"meanings":[],"examples":[]})
+            if len(entry["translations"])<8 and not any(x["text"]==meaning for x in entry["translations"]):
+                entry["translations"].append({"text":meaning,"source":source,"source_url":LEGAL[source]["source_url"]})
+                sources.add(source)
         if not words:continue
+        for values in words.values():
+            for typ in ("translations","meanings","examples"):
+                sources.update(x.get("source") for x in values[typ] if x.get("source"))
         outpath=out/("enrichment--"+pair+".json.gz")
-        payload={"schema":1,"pair":pair,"sources":LEGAL,"words":words}
-        b=json.dumps(payload,ensure_ascii=False,separators=(",",":")).encode("utf8")
+        # JSON data are written as a stream to avoid serializing large datasets twice.
         with outpath.open("wb") as output:
             with gzip.GzipFile(filename="",fileobj=output,mode="wb",mtime=0,compresslevel=7) as zipped:
-                zipped.write(b)
-        if outpath.stat().st_size>90_000_000:raise ValueError("Enrichment too large")
-        sources=sorted(set(x.get("source") for v in words.values() for key in ("translations","meanings","examples") for x in v[key]))
+                zipped.write(('{"schema":1,"pair":'+json.dumps(pair)+',"sources":'+
+                    json.dumps(LEGAL,ensure_ascii=False,separators=(",",":"))+',"words":{').encode("utf8"))
+                first=True
+                for word,data in words.items():
+                    if not first:zipped.write(b",")
+                    first=False
+                    zipped.write((json.dumps(word,ensure_ascii=False)+":"+
+                        json.dumps(data,ensure_ascii=False,separators=(",",":"))).encode("utf8"))
+                zipped.write(b"}}")
+        if outpath.stat().st_size>90_000_000:
+            raise ValueError("Enrichment too large for browser: "+pair+
+                "; use the separate source ZIPs or publish sharded indexes")
         record(outpath,"aggregate",pair,"https://github.com/danilfg/dicts",
-               "MULTI-LICENSE-BY-RECORD: "+", ".join(sources),"1",True,
-               "Respect rights of each entry via sources and metadata; see THIRD-PARTY-NOTICES.md")
+               "MIXED-PER-ENTRY: "+", ".join(sorted(sources)),"1",True,
+               "Each entry retains upstream source and attribution; see THIRD-PARTY-NOTICES.md")
 
 def main():
     ap=argparse.ArgumentParser()
@@ -315,6 +363,7 @@ def main():
     ap.add_argument("--mode",choices=["all","core"],default="all")
     args=ap.parse_args()
     out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
+    init_index(out)
     mirror_koreader(out,Path(args.upstream))
     if args.mode=="all":
         for source,fn in (("freedict",build_freedict),("wikdict",build_wikdict)):
@@ -331,6 +380,8 @@ def main():
         for source in ("freedict","wikdict","kaikki","tatoeba"):
             SOURCE_STATUSES[source]={"status":"not_requested","reason":"core mode"}
     save_enrichment(out)
+    INDEX_DB.close()
+    (out/"_enrich.sqlite3").unlink(missing_ok=True)
     for a in ASSETS:
         path=out/a["name"]
         if not path.exists() or sha256(path)!=a["sha256"]:

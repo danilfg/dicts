@@ -20,4 +20,6 @@ Copyright in the dictionaries, definitions, word forms, translations, expression
 
 The distributable archive's THIRD-PARTY-NOTICES.md and manifest.json constitute a version-specific attribution index; original LICENSE and ATTRIBUTION are preserved in mirrored ZIP packages or included for other repackaged data. The index does not replace the actual legal terms.
 
+**Disclaimer concerning lexical content quality.** This independent project accumulates and republishes third-party data. The maintainer does not create, fact-check, proofread or certify the correctness, currency, completeness or fitness of the underlying entries, translations, examples, or language assignments. These data are provided “as is”, to the extent allowed by applicable law. Readers are responsible for independently checking material translations, and authorship/content issues should be raised with original publishers. This disclaimer does not displace applicable mandatory warranties or consumer protection rights, nor does it eliminate obligations regarding package integrity, copyright, attribution, licenses, or legal compliance.
+
 This is a rights-disclosure and compliance aid, not an attorney's legal opinion. Resolve uncertain license combinations before proprietary or paid distribution.
