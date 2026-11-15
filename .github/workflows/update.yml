@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - .github/workflows/update.yml
+      - src/build.py
+      - configs/sources.json
+      - legal/SOURCES.json
   workflow_dispatch:
     inputs:
       mode:
