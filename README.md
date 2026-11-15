@@ -1,5 +1,7 @@
 # Dicts — Unified Offline Dictionary Distribution
 
+> **DISCLAIMER / ОТКАЗ ОТ ГАРАНТИЙ КАЧЕСТВА:** This repository is an independent **aggregator, packager and distributor**, not the author or editorial reviewer of third-party dictionary entries. The maintainer does **not warrant or certify** the correctness, completeness, freshness, translation quality, examples, or suitability for any particular purpose. Dictionary content, meanings, omissions and errors originate with their respective authors and publishers. Users should verify consequential translations against primary sources. The maintainer remains responsible for complying with applicable law, license notices, and any obligations that cannot lawfully be excluded. This statement does not waive statutory rights, does not override upstream licenses, and is subject to mandatory consumer protection law where applicable.
+
 **Dicts** is an independent, publicly accessible collection of offline bilingual dictionaries, translations, idioms, multi-word expressions and example sentences, maintained by [danilfg](https://github.com/danilfg). The goal is to let developers and learners download verified packages from **one GitHub Releases page**, rather than integrating five different hosting services.
 
 **[Download latest release](https://github.com/danilfg/dicts/releases/latest)** | **[Download every package as one ZIP](https://github.com/danilfg/dicts/releases/latest/download/dicts-all.zip)** | **[Run an update](https://github.com/danilfg/dicts/actions/workflows/update.yml)**
@@ -16,7 +18,7 @@
 | [kaikki](kaikki/README.md) | [Kaikki/Wiktextract](https://kaikki.org/simplewiktionary/rawdata.html), sourced from Wiktionary | Additional definitions and idioms in enrichment JSON.GZ | A selected English-language subset |
 | [tatoeba](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | Text examples in enrichment JSON.GZ | A selected English–Russian subset, no audio |
 
-This is **not a mirror of every language pair in every project**. Only release files listed in the machine-readable [manifest](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) are guaranteed to be part of a particular snapshot. A successfully verified initial snapshot included 74 KOReader ZIP files, 6 FreeDict ZIP files, 6 WikDict ZIP files, 6 enrichment indexes, 2,725 selected Kaikki expressions and 29,983 Tatoeba sentence pairs. Future coverage will depend on source updates and legal/format verification.
+This is **not a mirror of every language pair in every project**. Only release files listed in the machine-readable [manifest](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) are guaranteed to be part of a particular snapshot. The previous release was an **initial limited snapshot**, not the whole available corpus. It contained 74 KOReader packages, just 6 FreeDict directions, just 6 WikDict directions, 2,725 Kaikki expressions and 29,983 Tatoeba pairs. The repository is being expanded to automatic source discovery and full-text archives; **do not interpret the current manifest as a complete mirror of every upstream dictionary**. The published manifest, not the general README, records the actual scope.
 
 ## Download the collection
 
@@ -102,4 +104,4 @@ Each release includes a manifest with the actual asset names, language pairs, so
 
 Developers should choose only the language pairs they need, verify downloaded files against their checksums, read the corresponding licenses, and preserve attribution when distributing or showing text. Using a StarDict reader does not automatically support the separate enrichment JSON.GZ format.
 
-**Issue reporting:** [Open an issue](https://github.com/danilfg/dicts/issues) with the affected package, exact dictionary entry, upstream source or Tatoeba sentence ID. Data are distributed as-is, with no warranty of completeness or accuracy.
+**Issue reporting:** [Open an issue](https://github.com/danilfg/dicts/issues) with the affected package, exact dictionary entry, upstream source or Tatoeba sentence ID. Third-party lexical content is redistributed **as-is** with no editorial guarantee of accuracy, completeness or fitness for any use, subject to non-excludable statutory rights. Claims about upstream entries should be directed to the data originator; packaging, licensing, integrity and repository issues may be reported here.
