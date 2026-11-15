@@ -144,7 +144,7 @@ def package_zip(path,files,license_text,notice,source_archive=None):
 
 def build_freedict(out):
     cfg=CONFIG["freedict"]
-    catalog={x["name"]:x for x in json.loads(read_url(cfg["catalog"],20_000_000))}
+    catalog={x["name"]:x for x in json.loads(read_url(cfg["catalog"],20_000_000)) if isinstance(x,dict) and x.get("name")}
     codes={"eng":"en","rus":"ru","spa":"es","deu":"de"}
     successes=0
     for name in cfg["pairs"]:
