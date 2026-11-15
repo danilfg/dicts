@@ -40,6 +40,14 @@ All ready-to-use files are delivered from **github.com/danilfg/dicts**, not dire
 
 Dictionary packages use StarDict data that can be read by suitable clients. Supplementary enrichment indexes use JSON.GZ and require an application adapter; they are not standalone StarDict dictionaries. Download size and expanded disk usage differ.
 
+## Verify a published release independently
+
+The separate [Audit published dictionary collections](https://github.com/danilfg/dicts/actions/workflows/audit.yml) workflow can be run manually and is scheduled monthly. It **does not trust a green build result alone**: it downloads the actual published manifest, checks SHA-256 for **every release file** against both GitHub's asset digests and SHA256SUMS.txt, verifies bundle-part coverage, checks source discovery counts and release status, and tests sample StarDict dictionaries and EN-RU enrichment for all four supplementary sources. It also checks the full raw Kaikki and Tatoeba release manifests and part checksums.
+
+The audit reports exact source coverage in the GitHub Actions job log and step summary. For the verified 2026-11-15 snapshot, the main release contained 74 KOReader, 305 FreeDict and 427 WikDict ZIP dictionaries, plus 58 enrichment archives. All 870 published asset digests matched; 21 Kaikki text archives and 5 Tatoeba text archives passed the raw-release inventory checks.
+
+**Scope of verification:** This confirms archive presence, metadata, integrity, licensing notices and representative sample formats. It **does not** linguistically validate every dictionary entry, prove that every upstream publisher's possible format is supported, or guarantee that every source pair is directly installable into the Chrome extension. Full raw corpus releases and compact browser enrichment indexes are separate distributions.
+
 ## Update every source with one button
 
 The workflow is defined in [Update all dictionary sources](.github/workflows/update.yml).
