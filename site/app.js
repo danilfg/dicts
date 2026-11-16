@@ -107,6 +107,32 @@ function sourceFooter(body,info){
    const details=el("details","entry-credit");const sum=el("summary","",t("credit"));details.append(sum,el("p","",info.attribution));body.append(details)
  }
 }
+function addFormattedArticle(container,original,from,to){
+ const format=window.DictsEntryFormat;
+ if(!format){container.append(el("div","article-raw",String(original||"")));return}
+ const lines=format.parseEntry(original,from,to);
+ const article=el("div","dictionary-article");
+ for(const line of lines){
+    if(line.kind==="phonetic"){
+      const p=el("div","article-phonetic",line.text);article.append(p);continue
+    }
+    if(line.kind==="part"){
+      article.append(el("div","article-part",line.text));continue
+    }
+    const row=el("div","article-line");
+    if(line.number)row.append(el("span","article-number",line.number));
+    if(line.part)row.append(el("span","article-part",line.part));
+    const detail=el("div","article-detail");
+    if(line.kind==="sense"){
+      detail.append(el("div","article-translation",line.translation));
+      detail.append(el("div","article-explanation",line.explanation));
+    }else{
+      detail.append(el("div",line.kind==="translation"?"article-translation":line.kind==="explanation"?"article-explanation":"article-raw",line.text))
+    }
+    row.append(detail);article.append(row);
+ }
+ container.append(article);
+}
 function renderTranslations(word,pair,entry){
  const fragment=document.createDocumentFragment();
  let sourceCount=0,total=0;
@@ -118,7 +144,7 @@ function renderTranslations(word,pair,entry){
    for(const meaning of entries){
       if(typeof meaning!=="string"||!meaning.trim())continue;
       const div=el("div","definition");
-      div.textContent=meaning;
+      addFormattedArticle(div,meaning,pair.split("-")[0],pair.split("-")[1]);
       body.append(div);total++;
    }
    sourceFooter(body,sourceInfo(pair,id));fragment.append(card)
@@ -130,7 +156,7 @@ function renderTranslations(word,pair,entry){
    for(const [source,items] of types){
      const {card,body}=summaryCard(source==="kaikki"?"Kaikki / Wiktionary":source,items.length,source);
      for(const m of items){
-        const div=el("div","definition");div.append(el("div","item-text",m.text));
+        const div=el("div","definition");addFormattedArticle(div,m.text,pair.split("-")[0],pair.split("-")[1]);
         if(m.source_url){div.append(el("div","entry-credit")).append(anchor(t("source")+" ↗",m.source_url))}
         body.append(div);
      }

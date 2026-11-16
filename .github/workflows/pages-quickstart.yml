@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/pages-quickstart.yml
       - src/build_pages.py
+      - site/**
+      - tests/test_entry_format.cjs
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,6 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check site/app.js
+          node --check site/entry-format.js
+          node --test tests/test_entry_format.cjs
           python -m unittest discover -s tests -v
       - name: Download 6 verified language directions for first live searchable site
         env:
