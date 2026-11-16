@@ -33,3 +33,50 @@
 .ipa-label{color:#8c9aaf;font-weight:700;font-size:11px;line-height:25px}
 .ipa-variants{display:flex;flex-wrap:wrap;gap:5px}
 .ipa-variant{display:inline-block;color:#667e9f;background:#f4f7fb;border:1px solid #e7edf6;border-radius:7px;padding:3px 8px;font-size:12px;line-height:18px;white-space:normal;overflow-wrap:anywhere}
+
+/* Compact search and source-preserving results, including semantic networks. */
+.intro{padding:36px 0 23px}
+.intro h1{font-size:clamp(32px,4vw,46px);line-height:1.16;letter-spacing:-1.75px;margin:12px auto 12px}
+.hero-description{font-size:13px;line-height:1.62;max-width:640px}
+.search-shell{max-width:900px;border-radius:16px;padding:3px 10px 9px}
+.lang-bar{padding:9px 15px 10px}
+.query-bar{padding:5px 5px 0}
+.query-bar input{padding:9px 0}
+.query-bar button{padding:11px 15px;min-width:114px}
+.search-meta{max-width:900px;margin:9px auto}
+#results{margin:18px auto 44px;max-width:950px;min-height:160px}
+.results-head h2{font-size:27px;margin:2px 0}
+.result-summary{margin:10px 0 13px}
+.dictionary-card{margin:9px 0;border-radius:13px}
+.dictionary-card summary{padding:11px 15px;gap:9px}
+.source-body{padding:2px 15px 12px}
+.article-line{padding:5px 0}
+.dictionary-card .definition{padding:5px 0}
+.source-footer{padding-top:10px}
+.entry-credit{margin:5px 0 0}
+.source-directory{margin:45px auto 36px}
+.source-tile{padding:15px;min-height:125px}
+.source-tile .source-logo{margin-bottom:9px}
+.footer{padding:18px 0 25px}
+.source-avatar[data-source=oewn]{background:#edf2ff;color:#4c6bc0}
+.source-avatar[data-source=omw]{background:#e7f3fa;color:#3477a4}
+.source-avatar[data-source=conceptnet]{background:#fff2df;color:#a77b3d}
+.lexical-heading{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#7894b8;text-align:left;padding:14px 0 5px}
+.semantic-card{border-color:#dce6f2}
+.semantic-note{color:#8291a7;font-size:11px;line-height:1.5;margin:9px 0}
+.lexical-subtitle{color:#91a1b7;font-size:10px;letter-spacing:1px;font-weight:800;text-transform:uppercase;padding-top:9px}
+.lexical-definitions{display:grid;gap:5px}
+.lexical-definition{font-size:13px;line-height:1.58;color:#344d6c;padding-left:12px;border-left:2px solid #cbdaf1;overflow-wrap:anywhere}
+.lexical-tags{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.lexical-tag{font-size:11px;line-height:1.45;padding:4px 8px;border-radius:7px;color:#4e6280;background:#f3f6fa;overflow-wrap:anywhere;max-width:100%}
+.lexical-relation{display:grid;grid-template-columns:125px 1fr;gap:10px;align-items:start;border-bottom:1px solid #edf1f5;padding:6px 0}
+.lexical-rel-name{font-size:11px;font-weight:700;color:#647997;padding-top:11px}
+.semantic-only-heading{font:800 26px Manrope;color:#283c5e;text-align:left;margin:10px 0}
+@media(max-width:500px){
+ .intro{padding:25px 0 20px}
+ .intro h1{font-size:31px}
+ .lexical-relation{grid-template-columns:1fr;gap:0}
+ .dictionary-card summary{padding:10px 12px}
+ .source-body{padding:2px 12px 11px}
+ .source-tile{min-height:120px}
+}

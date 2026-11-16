@@ -96,7 +96,7 @@ function countLabel(count,type){
 function summaryCard(title,count,id){
  const card=el("details","dictionary-card");card.open=true;
  const summary=el("summary");
- const icon=el("span","source-avatar",id==="koreader"?"K":id==="freedict"?"F":id==="wikdict"?"W":id==="kaikki"?"K":"T");icon.dataset.source=id;
+ const icon=el("span","source-avatar",id==="koreader"?"K":id==="freedict"?"F":id==="wikdict"?"W":id==="kaikki"?"K":id==="oewn"?"O":id==="omw"?"M":id==="conceptnet"?"C":"T");icon.dataset.source=id;
  const heading=el("span","source-title");heading.append(el("b","",title),el("small","",countLabel(count,"entries")));
  summary.append(icon,heading,el("span","chevron","⌄"));card.append(summary);
  const body=el("div","source-body");card.append(body);
@@ -196,6 +196,106 @@ function renderTranslations(word,pair,entry){
  }
  return {fragment,sourceCount,total:total+meanings.length,examples:examples.length}
 }
+/* Optional semantic sources: independent of bilingual translations and safely
+   rendered only after matching published, source-labelled lookup data. */
+const LEXICAL_NAMES={oewn:"Open English WordNet",omw:"Open Multilingual Wordnet",conceptnet:"ConceptNet"};
+let lexicalCatalogPromise=null;
+async function getLexicalCatalog(){
+ if(!lexicalCatalogPromise){
+   lexicalCatalogPromise=fetch("./data/lexical/catalog.json",{cache:"no-cache"})
+     .then(r=>r.ok?r.json():null)
+     .catch(()=>null);
+ }
+ return lexicalCatalogPromise;
+}
+async function lookupLexical(source,language,word){
+ const catalog=await getLexicalCatalog();
+ const metadata=catalog?.sources?.[source];
+ const resource=metadata?.languages?.find(x=>x.language===language);
+ if(!resource)return null;
+ const number=await shaBucket(word,resource.buckets);
+ const name=number.toString(16).padStart(2,"0");
+ const response=await fetch("./data/lexical/"+source+"/"+encodeURIComponent(language)+"/"+name+".json.gz");
+ if(!response.ok)return null;
+ if(!("DecompressionStream" in window))return null;
+ const content=await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).json();
+ if(content.source!==source||content.language!==language||!content.words)return null;
+ return {entry:content.words[word],meta:metadata};
+}
+function addLexicalRecords(container,source,result){
+ const data=result.entry;
+ const fragment=document.createDocumentFragment();
+ const addSubtitle=(label)=>{
+   const labelElement=el("div","lexical-subtitle",label);fragment.append(labelElement);
+ };
+ if(source==="conceptnet"){
+   if(!Array.isArray(data)||!data.length)return false;
+   for(const [relation,relations] of Object.entries(Object.groupBy?Object.groupBy(data,x=>x.relation):
+     data.reduce((obj,x)=>{(obj[x.relation]??=[]).push(x);return obj;},{}))){
+      const section=el("div","lexical-relation");
+      section.append(el("span","lexical-rel-name",relation.replace(/([a-z])([A-Z])/g,"$1 $2")));
+      const tags=el("div","lexical-tags");
+      for(const item of relations.slice(0,12)){
+        const lang=item.language||"";
+        tags.append(el("span","lexical-tag",item.word+(lang?" · "+lang.toUpperCase():"")));
+      }
+      section.append(tags);fragment.append(section);
+   }
+ }else{
+   const definitions=Array.isArray(data.definitions)?data.definitions.filter(Boolean):[];
+   const synonyms=Array.isArray(data.synonyms)?data.synonyms.filter(Boolean):[];
+   if(definitions.length){
+     addSubtitle(state.locale==="ru"?"Определения":"Definitions");
+     const list=el("div","lexical-definitions");
+     for(const def of definitions.slice(0,8))list.append(el("div","lexical-definition",def));
+     fragment.append(list);
+   }
+   if(synonyms.length){
+     addSubtitle(state.locale==="ru"?"Синонимы и связанные слова":"Synonyms and related words");
+     const tags=el("div","lexical-tags");
+     for(const term of synonyms.slice(0,25))tags.append(el("span","lexical-tag",term));
+     fragment.append(tags);
+   }
+ }
+ if(!fragment.childNodes.length)return false;
+ container.append(fragment);
+ return true;
+}
+async function renderLexical(word,sourceLanguage,requestId){
+ const catalog=await getLexicalCatalog();
+ if(!catalog||requestId!==state.searchNumber)return;
+ const sources=["oewn","omw","conceptnet"].filter(id=>
+   catalog.sources?.[id]?.languages?.some(item=>item.language===sourceLanguage));
+ if(!sources.length)return;
+ const looked=await Promise.allSettled(sources.map(src=>lookupLexical(src,sourceLanguage,word)));
+ if(requestId!==state.searchNumber)return;
+ let cards=0;
+ const section=el("section","lexical-block");
+ const header=el("div","lexical-heading",state.locale==="ru"?"ОПРЕДЕЛЕНИЯ И СМЫСЛОВЫЕ СВЯЗИ":"DEFINITIONS & SEMANTIC RELATIONS");
+ section.append(header);
+ for(const [i,result] of looked.entries()){
+   if(result.status!=="fulfilled"||!result.value?.entry)continue;
+   const source=sources[i],info=result.value.meta;
+   const {card,body}=summaryCard(LEXICAL_NAMES[source],1,source);
+   card.classList.add("semantic-card");
+   const intro=el("div","semantic-note",
+     source==="conceptnet"
+     ?(state.locale==="ru"?"Связанные понятия — не прямые переводы":"Related concepts — not literal translations")
+     :(state.locale==="ru"?"Определения и лексические связи — не прямые переводы":"Definitions and lexical connections — not translations"));
+   body.append(intro);
+   if(!addLexicalRecords(body,source,result.value))continue;
+   sourceFooter(body,{license:info.license,source_url:info.source_url,download_url:info.release_url,
+                      attribution:info.title+"; original contributors and rightsholders"});
+   section.append(card);
+   cards++;
+ }
+ if(cards){
+   // Add semantic information *after* translations and examples.
+   const root=$("results");
+   if(root.querySelector(".no-results"))root.replaceChildren(el("h2","semantic-only-heading",word));
+   root.append(section);
+ }
+}
 function render(word,pair,entry,metadata){
  const target=$("results");target.replaceChildren();
  const heading=el("div","results-head");
@@ -231,6 +331,8 @@ async function search(){
    const entry=payload.words[word];
    if(entry){render(raw,pair,entry,metadata);setStatus("")}
    else{emptyResult(t("notFound"),t("notFoundDetail"));setStatus("")}
+   // Look up independent lexical/semantic networks, never relabelled as translation.
+   renderLexical(word,metadata.from,request).catch(error=>console.warn("Semantic lookup unavailable:",error));
  }catch(err){
    if(request!==state.searchNumber)return;
    console.error("Lookup error",err);
