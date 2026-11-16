@@ -89,12 +89,67 @@ def copy_existing_index(target: pathlib.Path, base: str = DEFAULT_BASE) -> dict:
     )
     return catalog
 
+def copy_existing_lexical_index(target: pathlib.Path, base: str = DEFAULT_BASE) -> dict | None:
+    """Preserve previously deployed lexical shards across inexpensive UI builds."""
+    base = base.rstrip("/") + "/"
+    try:
+        raw = get_bytes(base + "lexical/catalog.json", 2_000_000)
+    except urllib.error.HTTPError as err:
+        if err.code == 404:
+            print("No lexical index has been published yet; skipping copy.", flush=True)
+            return None
+        raise
+    catalog = json.loads(raw)
+    if catalog.get("schema") != 1 or not isinstance(catalog.get("sources"), dict):
+        raise ValueError("Unexpected lexical catalog")
+    folder = target / "data" / "lexical"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "catalog.json").write_bytes(raw)
+    files = []
+    totals = {}
+    for source, info in catalog["sources"].items():
+        if source not in ("oewn", "omw", "conceptnet"):
+            raise ValueError("Unexpected lexical source: " + source)
+        for item in info.get("languages", []):
+            lang = item["language"]
+            count = item["buckets"]
+            if not lang.isalpha() or count not in (1, 4, 16, 32, 64):
+                raise ValueError("Unexpected lexical language/bucket count")
+            for i in range(count):
+                files.append((source, lang, i, item["compressed_bytes"]))
+
+    def get_one(row):
+        source, lang, i, expected = row
+        relative = f"lexical/{source}/{lang}/{i:02x}.json.gz"
+        content = get_bytes(base + relative, MAX_SHARD_SIZE)
+        if content[:2] != b"\x1f\x8b":
+            raise ValueError("Non-gzip lexical index " + relative)
+        path = target / "data" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        return source, lang, len(content)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+        for source, lang, size in pool.map(get_one, files):
+            key = source + "/" + lang
+            totals[key] = totals.get(key, 0) + size
+
+    for source, info in catalog["sources"].items():
+        for item in info.get("languages", []):
+            key = source + "/" + item["language"]
+            if totals.get(key) != item["compressed_bytes"]:
+                raise ValueError("Incomplete deployed lexical index: " + key)
+    print("Copied existing source-attributed lexical index, "
+          + str(len(files)) + " shards, no GitHub API calls.", flush=True)
+    return catalog
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--site-dir", default="site")
     parser.add_argument("--base-url", default=DEFAULT_BASE)
     args = parser.parse_args()
     copy_existing_index(pathlib.Path(args.site_dir), args.base_url)
+    copy_existing_lexical_index(pathlib.Path(args.site_dir), args.base_url)
 
 if __name__ == "__main__":
     main()

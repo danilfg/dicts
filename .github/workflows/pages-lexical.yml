@@ -1,0 +1,88 @@
+name: Index WordNet and ConceptNet for GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/pages-lexical.yml
+      - src/build_pages_lexical.py
+      - tests/test_pages_lexical.py
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-lexical-deployment
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'danilfg/dicts' && (github.event_name != 'release' || startsWith(github.event.release.tag_name, 'lex-'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify parsing and browser syntax
+        run: |
+          node --check site/app.js
+          python -m unittest discover -s tests -v
+      - name: Copy already published bilingual search shards
+        run: python src/refresh_pages_data.py --site-dir site
+      - name: Download published licensed lexical data without GitHub REST API
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lexical-input
+          get() {
+            local tag="$1" name="$2"
+            echo "Downloading $name from $tag"
+            curl --fail --location --retry 4 --retry-all-errors --retry-delay 5 \
+              --connect-timeout 40 --max-time 1800 \
+              --output "lexical-input/$name" \
+              "https://github.com/danilfg/dicts/releases/download/$tag/$name"
+            test -s "lexical-input/$name"
+          }
+          get lex-oewn-2025-edition-v1 lexicon--oewn-en.json.gz
+          get lex-omw-v2.0-v1 omw--omw-en-2.0.tar.xz
+          get lex-omw-v2.0-v1 omw--omw-es-2.0.tar.xz
+          get lex-conceptnet-5.7.0-v1 conceptnet--assertions-5.7.0.csv.gz
+      - name: Generate source-attributed WordNet and ConceptNet index
+        shell: bash
+        run: |
+          python src/build_pages_lexical.py \
+            --oewn lexical-input/lexicon--oewn-en.json.gz \
+            --omw en=lexical-input/omw--omw-en-2.0.tar.xz \
+            --omw es=lexical-input/omw--omw-es-2.0.tar.xz \
+            --conceptnet lexical-input/conceptnet--assertions-5.7.0.csv.gz \
+            --site-dir site
+          python - <<'PY'
+          import json, pathlib
+          c=json.loads(pathlib.Path("site/data/lexical/catalog.json").read_text())
+          assert c["sources"]["oewn"]["languages"], "OEWN unavailable"
+          assert c["sources"]["conceptnet"]["languages"], "ConceptNet unavailable"
+          assert c["sources"]["omw"]["languages"], "OMW unavailable"
+          size=sum(x.stat().st_size for x in pathlib.Path("site").rglob("*") if x.is_file())
+          assert size<945_000_000, f"Pages site too large: {size}"
+          print("Lexical Pages index ready, bytes",size)
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'lex-')
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
