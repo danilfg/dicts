@@ -1,7 +1,9 @@
-# Kaikki / Wiktionary — complete raw text editions
+# Kaikki / Wiktionary
 
-The full-text mirror job reads the [official raw downloads directory](https://kaikki.org/dictionary/rawdata.html) and discovers **every currently published supported Wiktionary edition** with a `.jsonl.gz` text extract, including the English edition which alone is larger than GitHub's 2 GiB per-file threshold.
+[Original textual extractions](https://kaikki.org/dictionary/rawdata.html) · [Raw corpus releases](https://github.com/danilfg/dicts/releases?q=raw-kaikki)
 
-The complete source text archives are distributed in independent **raw-kaikki-*** GitHub Releases, with each large archive split into sequential chunks. Source manifests document the original URLs, chunk names, checksums and reassembly instructions. This is different from the lightweight browser enrichment pack, which may only contain a subset of definitions and expressions prepared for quick search.
+The workflow mirrors discoverable textual Wiktionary editions as independent `raw-kaikki-*` releases. Original large files may be split into numbered parts with the exact URLs and checksums in `SOURCE-MANIFEST.json`.
 
-Standard Wiktionary text generally carries CC BY-SA attribution/share-alike conditions; separately licensed images/audio are excluded. No independent linguistic-quality guarantee is made.
+The main dictionary release additionally contains a **limited study index** of selected English expressions and definitions, **not** every Wiktionary entry or language. These are distinct deliverables and require different readers.
+
+Applicable Wiktionary text generally uses CC BY-SA terms; respect original contributors, source/licensing and modification notices. Individually licensed media are not included as standalone audio/image archives.

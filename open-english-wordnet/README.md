@@ -1,9 +1,7 @@
 # Open English WordNet
 
-Official publisher: https://en-word.net/downloads
+[Original project](https://github.com/globalwordnet/english-wordnet) · [Publisher downloads](https://en-word.net/downloads) · [Lexical releases](https://github.com/danilfg/dicts/releases?q=lex-oewn)
 
-Data contributions to Learn Words with Cards after an application adapter: **English definitions, synonyms, antonyms and semantic relations**.
+The English lexical network provides synsets, definitions, synonyms, semantic hierarchy and related words. Dicts mirrors the upstream data formats and generates a separate normalized `lexicon--oewn-en.json.gz` for applications.
 
-Licensing: **CC BY 4.0**. Original authors and upstream attribution must be preserved. Project owner danilfg performs aggregation and technical distribution only, with no guarantee of dictionary quality or correctness.
-
-The GitHub Actions [Update all dictionary sources](../.github/workflows/update.yml) workflow automatically checks the latest public data publication and creates an **independent lexical source release**. It does not overwrite the latest release used by the existing browser dictionary installer. Published data can be downloaded from [GitHub Releases](https://github.com/danilfg/dicts/releases), with checksums and licensing in each lexical release's LEXICAL-MANIFEST.json.
+**License:** CC BY 4.0, with **required credit to both Princeton WordNet and the Open English WordNet team**, as expressly described in the [upstream license](https://github.com/globalwordnet/english-wordnet/blob/main/LICENSE.md). Preserve the original notices and identify the normalized index as an adaptation. Learn Words with Cards requires an adapter to display this additional data.

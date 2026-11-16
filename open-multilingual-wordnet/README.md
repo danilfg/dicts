@@ -1,9 +1,7 @@
 # Open Multilingual Wordnet
 
-Official publisher: https://omwn.org/
+[Original OMW data](https://github.com/omwn/omw-data) · [Lexical releases](https://github.com/danilfg/dicts/releases?q=lex-omw)
 
-Data contributions to Learn Words with Cards after an application adapter: **Multilingual synsets, lexical links, and cross-language concept relations**.
+OMW connects lexical synsets across languages. Dicts mirrors the available WN-LMF packages, original `index.toml` and generated `omw--PER-PACKAGE-LICENSES.json` detailing individual credits and terms.
 
-Licensing: **Separate license for every component**. Original authors and upstream attribution must be preserved. Project owner danilfg performs aggregation and technical distribution only, with no guarantee of dictionary quality or correctness.
-
-The GitHub Actions [Update all dictionary sources](../.github/workflows/update.yml) workflow automatically checks the latest public data publication and creates an **independent lexical source release**. It does not overwrite the latest release used by the existing browser dictionary installer. Published data can be downloaded from [GitHub Releases](https://github.com/danilfg/dicts/releases), with checksums and licensing in each lexical release's LEXICAL-MANIFEST.json.
+**No uniform OMW license exists.** Some source metadata only says `wordnet`; this is not a complete legal license. Inspect each component's original license and credit its creators as well as OMW/Bond/Foster before derivative or commercial redistribution. These are not ready-to-install StarDict archives; application integration needs a WN-LMF adapter.

@@ -1,9 +1,7 @@
 # ConceptNet
 
-Official publisher: https://github.com/commonsense/conceptnet5/wiki/Downloads
+[Official source](https://github.com/commonsense/conceptnet5) · [Lexical releases](https://github.com/danilfg/dicts/releases?q=lex-conceptnet)
 
-Data contributions to Learn Words with Cards after an application adapter: **Multilingual semantic edges, related concepts and common-sense associations**.
+ConceptNet is a **multilingual semantic knowledge graph**, not a conventional bilingual dictionary. Its original published language inventory lists **304 languages with differing levels of coverage**. Dicts mirrors the official ConceptNet 5.7 assertions CSV.GZ and retains upstream license and source-credit notices.
 
-Licensing: **CC BY-SA 4.0 data and source-specific provenance**. Original authors and upstream attribution must be preserved. Project owner danilfg performs aggregation and technical distribution only, with no guarantee of dictionary quality or correctness.
-
-The GitHub Actions [Update all dictionary sources](../.github/workflows/update.yml) workflow automatically checks the latest public data publication and creates an **independent lexical source release**. It does not overwrite the latest release used by the existing browser dictionary installer. Published data can be downloaded from [GitHub Releases](https://github.com/danilfg/dicts/releases), with checksums and licensing in each lexical release's LEXICAL-MANIFEST.json.
+**Graph data** is CC BY-SA 4.0 according to [DATA-CREDITS.md](https://github.com/commonsense/conceptnet5/blob/master/DATA-CREDITS.md). The separate software `LICENSE.txt` must not be treated as the dataset license. Attribution to original contributors and source provenance are required. Learn Words with Cards needs a graph adapter before it can use these relationships.

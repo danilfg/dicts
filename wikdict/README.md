@@ -1,5 +1,7 @@
-# WikDict — all published language pairs
+# WikDict
 
-The builder discovers every archive matching `wikdict-XX-YY.zip` in the official [WikDict StarDict directory](https://download.wikdict.com/dictionaries/stardict/), without a manually maintained six-language limit. Files published from successfully validated downloads appear in Releases as `wikdict--<pair>.zip`; see manifest.json for exact counts and any skipped archives.
+[Publisher](https://www.wikdict.com/page/download) · [Source archive directory](https://download.wikdict.com/dictionaries/stardict/) · [Main release](https://github.com/danilfg/dicts/releases/latest)
 
-Original data: WikDict (Karl Bartel), DBnary, Wiktionary contributors; subject to CC BY-SA 4.0 conditions. Repackaged archives preserve attribution, source URL, license and modification notice. This aggregator does not guarantee lexical completeness, correctness or currentness.
+The builder automatically discovers available StarDict pairs and publishes validated `wikdict--PAIR.zip` archives. The verified main release has included **427** packages. Check the latest manifest for current coverage, including any skipped sources.
+
+Attribution belongs to WikDict/Karl Bartel, DBnary and Wiktionary contributors. The applicable data license is **CC BY-SA 4.0**. Preserve author/source credits, a license link, modification notices and relevant ShareAlike conditions. Source entries have no independent editorial quality guarantee.

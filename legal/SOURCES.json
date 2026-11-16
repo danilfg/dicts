@@ -38,10 +38,10 @@
       "id": "kaikki",
       "name": "Kaikki / Wiktextract / Wiktionary",
       "copyright": "Wiktionary contributors; extraction by Tatu Ylonen",
-      "source_url": "https://kaikki.org/simplewiktionary/rawdata.html",
+      "source_url": "https://kaikki.org/dictionary/rawdata.html",
       "license": "CC-BY-SA-4.0 for eligible text",
       "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "modification": "Selection of textual multi-word expressions from the Simple English Wiktionary",
+      "modification": "Mirror complete discoverable raw text extractions in raw releases; create separate limited expression/meaning index in the main release.",
       "requirements": "Wiktionary attribution and source page, license link, change notice, share-alike; media excluded"
     },
     {
@@ -51,7 +51,7 @@
       "source_url": "https://tatoeba.org/en/downloads",
       "license": "CC-BY-2.0-FR or CC0 where expressly identified",
       "license_url": "https://creativecommons.org/licenses/by/2.0/fr/",
-      "modification": "Extracted and matched EN-RU text-only sentences; no audio",
+      "modification": "Mirror multilingual text sentence/link exports with no audio; create a selected EN-RU example index for the main release.",
       "requirements": "Preserve original sentence IDs, contributor name if provided, link to source, license and change notice"
     },
     {
@@ -62,37 +62,37 @@
       "license": "MIXED-PER-RECORD; NOT MIT",
       "license_url": "https://github.com/danilfg/dicts/blob/main/legal/NOTICE.md",
       "modification": "Metadata-tagged combined index of separate translations, meanings and example sentences",
-      "requirements": "Each contribution retains source and applicable original license. Evaluate copyleft compatibility before downstream adaptation, especially any GPL/GFDL-derived FreeDict entries."
+      "requirements": "Combined entry indices remain mixed-license: preserve per-record source and resolve derivative/share-alike/GPL/GFDL compatibility questions before redistribution."
     },
     {
       "id": "oewn",
       "name": "Open English WordNet",
       "copyright": "Open English Wordnet Community; Princeton WordNet contributors",
       "source_url": "https://en-word.net/downloads",
-      "license": "CC-BY-4.0",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license": "CC-BY-4.0; Princeton WordNet license attribution and notices also required",
+      "license_url": "https://github.com/globalwordnet/english-wordnet/blob/main/LICENSE.md",
       "modification": "Preserve upstream release assets and generate an English JSON.GZ index for definitions, synonyms and semantic relations.",
-      "requirements": "Attribution to original authors and contributors, identify derivatives; retain copyright and source reference."
+      "requirements": "Attribution to both Princeton WordNet and the Open English WordNet team; preserve original WordNet license notices and indicate normalization/other modifications."
     },
     {
       "id": "omw",
       "name": "Open Multilingual Wordnet",
       "copyright": "Individual authors of each WordNet; Francis Bond, Ryan Foster and contributors",
       "source_url": "https://github.com/omwn/omw-data/releases",
-      "license": "PER-LEXICON; individual licenses and citations in index.toml",
+      "license": "PER-COMPONENT; actual original lexicon licenses and citations govern",
       "license_url": "https://omwn.org/omw1.html",
       "modification": "Mirror source archives unchanged, preserve source index.toml and generate per-package license inventory.",
-      "requirements": "Each WordNet is differently licensed (CC BY, CC BY-SA, WordNet, CeCILL-C etc.); preserve license, citations and attribution per original resource."
+      "requirements": "Inspect each source wordnet license, not only index.toml shorthand such as 'wordnet'; retain original citations and credit OMW/Bond/Foster."
     },
     {
       "id": "conceptnet",
       "name": "ConceptNet 5.7 Assertions",
       "copyright": "ConceptNet, Luminoso, crowdsource contributors and original source creators",
       "source_url": "https://github.com/commonsense/conceptnet5/wiki/Downloads",
-      "license": "CC-BY-SA-4.0 with per-assertion provenance",
-      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "license": "CC-BY-SA-4.0 DATA; source credits and provenance",
+      "license_url": "https://github.com/commonsense/conceptnet5/blob/master/DATA-CREDITS.md",
       "modification": "Exact compressed assertions snapshot mirrored; no edges truncated; source metadata left intact.",
-      "requirements": "Preserve attribution, data source credits and per-edge licensing where present; adapted data subject to ShareAlike."
+      "requirements": "Preserve original DATA-CREDITS.md, CC BY-SA 4.0 and source attribution; ConceptNet software LICENSE.txt is not the dataset license."
     }
   ]
 }

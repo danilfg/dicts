@@ -1,5 +1,7 @@
-# FreeDict — all available pairs
+# FreeDict
 
-The GitHub Actions builder discovers **every language pair** listed in the official [FreeDict machine-readable catalog](https://freedict.org/freedict-database.json); there is no fixed six-pair allowlist. Each pair is independently downloaded, checksum-verified against upstream SHA-512, and checked for a TEI license statement. All publishable StarDict packages are offered in Releases as `freedict--<pair>.zip`. Unavailable/unlicensed/incompatible packages are **reported as skipped** rather than silently claimed complete.
+[Official source](https://freedict.org/downloads/) · [Main release](https://github.com/danilfg/dicts/releases/latest)
 
-FreeDict dictionaries have **separate licenses** (some GPL/GFDL). Exact source TEI and attribution evidence accompany each transformed ZIP; the output remains under the original licenses. Read the original documents before commercial redistribution. Data accuracy and translation quality are the responsibility of the upstream authors; this independent aggregator does not verify linguistic correctness.
+The builder discovers all available language pairs in the official FreeDict catalog, rather than using a fixed six-pair list. The previously verified main release contains **305 FreeDict ZIPs**; check each newer release manifest for the actual count and source-status results.
+
+Files are named `freedict--PAIR.zip`, and package original TEI license evidence, attribution and source archive with the converted StarDict files. **Every dictionary has its own license** (possibly GPL/GFDL with source-distribution obligations). Do not assume the same terms across packages or claim the entries are MIT-licensed.
