@@ -8,6 +8,7 @@ on:
       - configs/sources.json
       - legal/SOURCES.json
       - src/mirror_raw.py
+      - src/sync_lexical.py
   workflow_dispatch:
     inputs:
       mode:
@@ -152,3 +153,25 @@ jobs:
       - name: Publish all available upstream text archives, preserving licenses
         run: |
           python src/mirror_raw.py --source ${{ matrix.source }}
+
+  lexical-resources:
+    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [oewn, omw, conceptnet]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate licenses and converters before publication
+        run: |
+          python -m compileall -q src
+          python -m unittest discover -s tests -v
+      - name: Mirror and publish independent lexical sources in own Releases
+        run: python src/sync_lexical.py --source ${{ matrix.source }}

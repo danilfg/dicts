@@ -8,6 +8,22 @@
 
 > **IMPORTANT — OWNERSHIP AND LICENSES:** Third-party dictionary content **does not become MIT-licensed** when added to this repository. Each source and each original dictionary package retains its original copyright, source attribution and licensing conditions. MIT covers only independently authored automation code and project documentation. This repository is not endorsed by or affiliated with the source projects.
 
+
+## Wordnets, semantic dictionaries and knowledge graphs
+
+This project also mirrors additional open lexical resources in independent GitHub Releases, with original licensing and author attribution:
+
+| Source | What it adds to Learn Words with Cards (after a client-side adapter) | License | Released as |
+|---|---|---|---|
+| [Open English WordNet](https://en-word.net/downloads) | English definitions, synonyms, semantic hierarchy, and relations | CC BY 4.0 | \`lex-oewn-*\` + normalized English JSON.GZ |
+| [Open Multilingual Wordnet](https://omwn.org/) | Linked multilingual synsets, related words and cross-language lexical concepts | Per component: CC, WordNet and other open terms | \`lex-omw-*\` with per-dictionary licensing inventory |
+| [ConceptNet](https://github.com/commonsense/conceptnet5/wiki/Downloads) | Common-sense semantic relations and word associations, published across **304 languages in the upstream graph** | CC BY-SA 4.0, with source-specific assertion metadata | \`lex-conceptnet-*\` full assertions dump |
+
+**Search and coverage:** A large multilingual and multi-source open dictionary aggregator, including **800+ published bilingual dictionary archives** in the independently verified 2026-11-15 collection, multilingual WordNet data and the ConceptNet knowledge graph. ConceptNet's official documentation identifies **304 languages**, but this is **not** a claim that 304 complete, bidirectional dictionaries are available, nor a claim to be the world's largest aggregator. Exactly which sources are currently published is documented by their corresponding release manifests. Each new lexical resource is built by the same [Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml) action in \`all\` mode and its monthly schedule.
+
+**Note:** The normal YouTube extension currently installs KOReader and compact enrichment archives. WordNet/ConceptNet files are **separate developer-ready distributions**; showing their definitions and relations inside popup/study cards requires an extension update. Publishing lexical files here does not automatically enable that interface.
+
+
 ## What is included?
 
 | Folder | Data source | Release assets | Coverage model |

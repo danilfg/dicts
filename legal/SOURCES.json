@@ -63,6 +63,36 @@
       "license_url": "https://github.com/danilfg/dicts/blob/main/legal/NOTICE.md",
       "modification": "Metadata-tagged combined index of separate translations, meanings and example sentences",
       "requirements": "Each contribution retains source and applicable original license. Evaluate copyleft compatibility before downstream adaptation, especially any GPL/GFDL-derived FreeDict entries."
+    },
+    {
+      "id": "oewn",
+      "name": "Open English WordNet",
+      "copyright": "Open English Wordnet Community; Princeton WordNet contributors",
+      "source_url": "https://en-word.net/downloads",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "modification": "Preserve upstream release assets and generate an English JSON.GZ index for definitions, synonyms and semantic relations.",
+      "requirements": "Attribution to original authors and contributors, identify derivatives; retain copyright and source reference."
+    },
+    {
+      "id": "omw",
+      "name": "Open Multilingual Wordnet",
+      "copyright": "Individual authors of each WordNet; Francis Bond, Ryan Foster and contributors",
+      "source_url": "https://github.com/omwn/omw-data/releases",
+      "license": "PER-LEXICON; individual licenses and citations in index.toml",
+      "license_url": "https://omwn.org/omw1.html",
+      "modification": "Mirror source archives unchanged, preserve source index.toml and generate per-package license inventory.",
+      "requirements": "Each WordNet is differently licensed (CC BY, CC BY-SA, WordNet, CeCILL-C etc.); preserve license, citations and attribution per original resource."
+    },
+    {
+      "id": "conceptnet",
+      "name": "ConceptNet 5.7 Assertions",
+      "copyright": "ConceptNet, Luminoso, crowdsource contributors and original source creators",
+      "source_url": "https://github.com/commonsense/conceptnet5/wiki/Downloads",
+      "license": "CC-BY-SA-4.0 with per-assertion provenance",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "modification": "Exact compressed assertions snapshot mirrored; no edges truncated; source metadata left intact.",
+      "requirements": "Preserve attribution, data source credits and per-edge licensing where present; adapted data subject to ShareAlike."
     }
   ]
 }
