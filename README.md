@@ -1,6 +1,8 @@
-# Dicts — Unified Offline Dictionary Distribution
+# Dicts — Open Multilingual Dictionary Aggregator | 800+ Bilingual Dictionaries, WordNet & ConceptNet
 
 > **DICTIONARY CONTENT QUALITY DISCLAIMER:** This repository is an independent **aggregator, packager and distributor**, not the author or editorial reviewer of third-party dictionary entries. The maintainer does **not warrant or certify** the correctness, completeness, freshness, translation quality, examples, or suitability for any particular purpose. Dictionary content, meanings, omissions and errors originate with their respective authors and publishers. Users should verify consequential translations against primary sources. The maintainer remains responsible for complying with applicable law, license notices, and any obligations that cannot lawfully be excluded. This statement does not waive statutory rights, does not override upstream licenses, and is subject to mandatory consumer protection law where applicable.
+
+**Search-friendly summary:** An open dictionary aggregator and downloadable offline language-data collection with **800+ bilingual dictionary archives** across KOReader, FreeDict and WikDict, plus WordNet lexical resources. The **ConceptNet source graph documents 304 languages**, but a semantic graph is not the same as 304 complete translation dictionaries. Each source is independently licensed, automatically updated in GitHub Actions and distributed from GitHub Releases. No independently verified global ranking is claimed.
 
 **Dicts** is an independent, publicly accessible collection of offline bilingual dictionaries, translations, idioms, multi-word expressions and example sentences, maintained by [danilfg](https://github.com/danilfg). The goal is to let developers and learners download verified packages from **one GitHub Releases page**, rather than integrating five different hosting services.
 
