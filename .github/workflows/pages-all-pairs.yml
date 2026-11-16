@@ -44,30 +44,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          build() {
-            python src/build_pages.py \
-              --download-dir downloads \
-              --manifest downloads/manifest.json \
-              --release-tag "$(cat downloads/.release-tag)" \
-              --site-dir site
-          }
-          if ! build 2>&1 | tee /tmp/dicts-pages-build.log; then
-            if ! grep -q 'Pages index exceeds GitHub Pages 1 GB limit' /tmp/dicts-pages-build.log; then
-              echo "::error::Dictionary build failed for a reason other than Pages size limit"
-              exit 1
-            fi
-            echo "::warning::Full original archive index exceeds 1 GB. Using published compact indexes wherever available."
-            python src/select_compact_pages.py --downloads downloads --skipped excluded-pages-zips
-            python - <<'PY_CLEAR'
-          import pathlib, shutil
-          root=pathlib.Path('site/data')
-          for file in root.iterdir():
-              if file.name=='lexical':continue
-              if file.is_dir():shutil.rmtree(file)
-              else:file.unlink()
-          PY_CLEAR
-            build
-          fi
+          # The last full original-archive conversion was 1.119 GB.
+          # Prefer complete source files only for pairs with no compact index;
+          # every full archive remains in the dictionary Releases.
+          python src/select_compact_pages.py --downloads downloads --skipped excluded-pages-zips
+          python src/build_pages.py \
+            --download-dir downloads \
+            --manifest downloads/manifest.json \
+            --release-tag "$(cat downloads/.release-tag)" \
+            --site-dir site
           python - <<'PY'
           import json, pathlib
           m=json.loads(pathlib.Path("downloads/manifest.json").read_text())
