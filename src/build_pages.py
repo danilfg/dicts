@@ -121,7 +121,8 @@ def index_pair(pair:str,files:list[tuple[str,Path]],enrichment:Path|None,site:Pa
     folder=site/"data"/pair
     total=0
     for i,entries in enumerate(shards):
-        if not entries:continue
+        # Publish even empty buckets so an unknown word yields a clean
+        # "not found" response, not an HTTP 404 and a broken UI.
         output=folder/("%02x.json.gz"%i)
         write_gzip(output,{"schema":1,"pair":pair,"words":entries})
         total+=output.stat().st_size
