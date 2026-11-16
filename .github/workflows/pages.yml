@@ -1,8 +1,6 @@
-name: Build and deploy dictionary search (GitHub Pages)
+name: Legacy full dictionary index (manual only)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
