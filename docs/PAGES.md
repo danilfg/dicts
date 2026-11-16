@@ -34,7 +34,7 @@ The published `data/catalog.json` is authoritative: language options appear
 only for pairs whose searchable data are actually published.
 
 The [all-language-pairs workflow](../.github/workflows/pages-all-pairs.yml)
-downloads the main dictionaries from **this repository's Releases**, verifies
+has successfully deployed **753 searchable language directions** using approximately **932.5 MB** of page assets. It downloads the main dictionaries from **this repository's Releases**, verifies
 source checksums, and attempts to index every published language direction.
 To meet GitHub Pages' **1 GB** limit, the builder prefers compact
 FreeDict/WikDict indexes where available, while keeping complete KOReader
