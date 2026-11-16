@@ -272,7 +272,7 @@ def build_conceptnet(directory,state):
     state["version"]="5.7.0"
     for name,url in [
        ("conceptnet--LICENSE.txt","https://raw.githubusercontent.com/commonsense/conceptnet5/master/LICENSE.txt"),
-       ("conceptnet--DATA-CREDITS.txt","https://raw.githubusercontent.com/commonsense/conceptnet5/master/DATA-CREDITS.txt")]:
+       ("conceptnet--DATA-CREDITS.md","https://raw.githubusercontent.com/commonsense/conceptnet5/master/DATA-CREDITS.md")]:
         target=directory/name
         download(url,target,limit=20_000_000)
         add_asset(state,target,"conceptnet",url,src["license"],src["credit"],version="5.7.0")
