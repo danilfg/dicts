@@ -167,7 +167,9 @@ def build_omw(directory,state):
     download(toml_asset["browser_download_url"],indexpath)
     verify(indexpath,toml_asset)
     index=tomllib.loads(indexpath.read_text())
-    packages=index.get("packages",{})
+    # Release index.toml uses top-level [omw-lang] sections; source-code
+    # index.toml uses [packages.omw-lang]. Support both upstream layouts.
+    packages=index.get("packages") or {k:v for k,v in index.items() if k.startswith("omw-") and isinstance(v,dict)}
     included=0;licenses={}
     for a in assets:
         if a["name"]=="index.toml":continue
@@ -198,13 +200,59 @@ def build_omw(directory,state):
     state["counts"]={"upstream_files":included,"individual_licenses":len(licenses),
                       "languages":len(set(info["language"] for info in licenses.values()))}
     state["version"]=rel["tag_name"]
+def hf_tree(path=""):
+    """Discover the publisher's community conversion without assuming file names."""
+    suffix="/"+path if path else ""
+    url="https://huggingface.co/api/datasets/CleverThis/conceptnet/tree/main"+suffix+"?recursive=true"
+    headers={"User-Agent":UA,"Accept":"application/json"}
+    with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=90) as resp:
+        return json.load(resp)
 def build_conceptnet(directory,state):
+    """Mirror original assertions when online; otherwise a clearly marked HF
+    redistribution of ConceptNet. Never label converted Parquet as original CSV.
+    """
     src=SOURCES["conceptnet"]
     path=directory/"conceptnet--assertions-5.7.0.csv.gz"
-    download(CONCEPTNET_SOURCE,path)
+    source_url=CONCEPTNET_SOURCE
+    try:
+        download(CONCEPTNET_SOURCE,path)
+    except urllib.error.HTTPError as e:
+        if e.code not in (403,404,410):raise
+        print("WARNING: official ConceptNet 5.7.0 assertions unavailable (HTTP "+str(e.code)+
+              "); discovering CC BY-SA attributed community Parquet mirror",flush=True)
+        path.unlink(missing_ok=True)
+        files=hf_tree()
+        flat=[x for x in files if x.get("path","").endswith(".parquet") and x.get("type")=="file"]
+        if not flat:
+            files=hf_tree("data")
+            flat=[x for x in files if x.get("path","").endswith(".parquet") and x.get("type")=="file"]
+        if not flat:raise ValueError("No downloadable ConceptNet Parquet mirror assets found")
+        mirrored=0
+        for file in flat:
+            rel=file["path"]
+            name="conceptnet--"+rel.replace("/","--")
+            dest=directory/name
+            url="https://huggingface.co/datasets/CleverThis/conceptnet/resolve/main/"+rel+"?download=true"
+            download(url,dest)
+            with dest.open("rb") as stream:
+                if stream.read(4)!=b"PAR1":raise ValueError("Not a valid Parquet header: "+rel)
+                stream.seek(-4,2)
+                if stream.read(4)!=b"PAR1":raise ValueError("Not a valid Parquet footer: "+rel)
+            digest=file.get("lfs",{}).get("oid")
+            if digest and sha256(dest)!=digest:raise ValueError("HuggingFace mirror checksum mismatch "+rel)
+            add_asset(state,dest,"conceptnet",url,"CC-BY-SA-4.0; community converted RDF Parquet",
+                      src["credit"]+"; converted by CleverThis / CleverErnie",version="5.7.0",modified=True)
+            mirrored+=1
+        readme_url="https://huggingface.co/datasets/CleverThis/conceptnet/raw/main/README.md"
+        readme=directory/"conceptnet--COMMUNITY-MIRROR-README.md"
+        download(readme_url,readme,limit=2_000_000)
+        add_asset(state,readme,"conceptnet",readme_url,src["license"],src["credit"]+"; CleverThis conversion",True,"5.7.0")
+        state["version"]="5.7.0-community-parquet"
+        state["counts"]={"mirror_format":"converted RDF Parquet","upstream_files":mirrored,
+            "note":"Official CSV URL returned 403/404; files rehosted from CC BY-SA 4.0 CleverThis dataset. Per-edge CSV metadata cannot be assumed to be present."}
+        return
     with path.open("rb") as f:
         if f.read(2)!=b"\x1f\x8b":raise ValueError("Official ConceptNet file is not gzipped")
-    # Test entire compressed stream for corruption; do not truncate any languages.
     lines=0;languages=set();license_types=set()
     with gzip.open(path,"rt",encoding="utf8",errors="replace") as f:
         for row in f:
@@ -222,7 +270,6 @@ def build_conceptnet(directory,state):
     state["counts"]={"assertion_rows":lines,"sampled_language_codes":len(languages),
                      "sampled_edge_licenses":sorted(license_types)}
     state["version"]="5.7.0"
-    # The dataset uses mixed upstream sources. Record original data credits.
     for name,url in [
        ("conceptnet--LICENSE.txt","https://raw.githubusercontent.com/commonsense/conceptnet5/master/LICENSE.txt"),
        ("conceptnet--DATA-CREDITS.txt","https://raw.githubusercontent.com/commonsense/conceptnet5/master/DATA-CREDITS.txt")]:
