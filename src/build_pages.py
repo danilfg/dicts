@@ -73,7 +73,7 @@ def extract_stardict(path: Path):
 def write_gzip(path: Path,obj) -> None:
     path.parent.mkdir(parents=True,exist_ok=True)
     with path.open("wb") as out:
-        with gzip.GzipFile(fileobj=out,filename="",mtime=0,mode="wb",compresslevel=5) as z:
+        with gzip.GzipFile(fileobj=out,filename="",mtime=0,mode="wb",compresslevel=9) as z:
             # JSONEncoder yields tiny tokens, sometimes millions. Buffer them so
             # gzip gets large chunks instead of one syscall per token.
             pieces=[]

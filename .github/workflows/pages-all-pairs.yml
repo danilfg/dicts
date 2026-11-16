@@ -1,0 +1,74 @@
+name: Publish all available dictionary directions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/pages-all-pairs.yml
+      - src/download_pages_inputs.py
+      - src/build_pages.py
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-all-pairs
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'danilfg/dicts' && (github.event_name != 'release' || startsWith(github.event.release.tag_name, 'data-'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate parser and client
+        run: |
+          python -m unittest discover -s tests -v
+          node --check site/app.js
+          node --test tests/test_entry_format.cjs
+      - name: Reuse the published bilingual and optional semantic indexes
+        run: python src/refresh_pages_data.py --site-dir site
+      - name: Download all KOReader pairs and all compact enrichment pairs from our Releases
+        run: python src/download_pages_inputs.py --dir downloads
+      - name: Produce searchable language-pair catalog and all compact data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python src/build_pages.py \
+            --download-dir downloads \
+            --manifest downloads/manifest.json \
+            --release-tag "$(cat downloads/.release-tag)" \
+            --site-dir site
+          python - <<'PY'
+          import json, pathlib
+          m=json.loads(pathlib.Path("downloads/manifest.json").read_text())
+          indexed=json.loads(pathlib.Path("site/data/catalog.json").read_text())
+          indexed_pairs={x["pair"] for x in indexed["pairs"]}
+          published_pairs={x["pair"] for x in m["assets"]
+            if x.get("source") in ("koreader","freedict","wikdict") and x.get("pair")}
+          missing=sorted(published_pairs-indexed_pairs)
+          if missing:raise AssertionError("Unsearchable published directions: "+repr(missing[:30]))
+          print("ALL LANGUAGE DIRECTIONS VERIFIED:",len(indexed_pairs),flush=True)
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'data-')
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
