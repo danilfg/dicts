@@ -11,6 +11,22 @@
 > **IMPORTANT — OWNERSHIP AND LICENSES:** Third-party dictionary content **does not become MIT-licensed** when added to this repository. Each source and each original dictionary package retains its original copyright, source attribution and licensing conditions. MIT covers only independently authored automation code and project documentation. This repository is not endorsed by or affiliated with the source projects.
 
 
+## Verified lexical snapshots — 2026-11-16
+
+Three independently licensed collections were downloaded, checked, and actually published in this repository through the **Update all dictionary sources** GitHub Action:
+
+| Source | Verified release | Published files | Provenance and data licensing |
+|---|---|---:|---|
+| **Open English WordNet 2025** | [lex-oewn-2025-edition-v1](https://github.com/danilfg/dicts/releases/tag/lex-oewn-2025-edition-v1) | 13 files | CC BY 4.0; upstream variants plus normalized English definitions/synonyms index |
+| **Open Multilingual Wordnet 2.0** | [lex-omw-v2.0-v1](https://github.com/danilfg/dicts/releases/tag/lex-omw-v2.0-v1) | 44 files | Per-lexicon license and original citation inventory from index.toml |
+| **ConceptNet 5.7 assertions** | [lex-conceptnet-5.7.0-v1](https://github.com/danilfg/dicts/releases/tag/lex-conceptnet-5.7.0-v1) | 5 files | Full original ConceptNet 5.7 assertions in the upstream .csv.gz format (497,963,447 bytes), with source LICENSE.txt and DATA-CREDITS.md; CC BY-SA 4.0 with source-specific provenance |
+
+The exact files and SHA-256 values are recorded in **LEXICAL-MANIFEST.json** in each release; original sources retain their original copyright and credit requirements. These \`lex-*\` releases are deliberately **not marked Latest** so that the normal \`/releases/latest/download/koreader--...\` links used by the browser extension remain stable.
+
+ConceptNet's own published [language inventory](https://github.com/commonsense/conceptnet5/wiki/Languages) documents **304 languages**, while the previously verified bilingual archive collection comprises **806 language-pair ZIP packages**. These are different measures: a ConceptNet semantic edge corpus spanning 304 languages does not mean the repository has 304 complete bilingual dictionaries. We have **not verified the claim that this is the world's largest dictionary aggregator**.
+
+The existing one-button [Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml) Action now has \`lexical-resources\` jobs for all three additional providers and runs on the monthly schedule. OEWN/OMW use the latest publisher release identifiers; ConceptNet currently pins the publisher's downloadable full assertions snapshot **5.7.0**. A separately released raw or lexical dataset does not become a Chrome study-card feature until the extension reads its format.
+
 ## Wordnets, semantic dictionaries and knowledge graphs
 
 This project also mirrors additional open lexical resources in independent GitHub Releases, with original licensing and author attribution:
