@@ -1,159 +1,100 @@
-# Dicts — Open Multilingual Dictionary Aggregator | 800+ Bilingual Dictionaries, WordNet & ConceptNet
+# Dicts — Open Multilingual Dictionary Aggregator
 
-> **DICTIONARY CONTENT QUALITY DISCLAIMER:** This repository is an independent **aggregator, packager and distributor**, not the author or editorial reviewer of third-party dictionary entries. The maintainer does **not warrant or certify** the correctness, completeness, freshness, translation quality, examples, or suitability for any particular purpose. Dictionary content, meanings, omissions and errors originate with their respective authors and publishers. Users should verify consequential translations against primary sources. The maintainer remains responsible for complying with applicable law, license notices, and any obligations that cannot lawfully be excluded. This statement does not waive statutory rights, does not override upstream licenses, and is subject to mandatory consumer protection law where applicable.
+**One independent GitHub collection of offline bilingual dictionaries, definitions, WordNets, example sentences and semantic knowledge.**
 
-**Search-friendly summary:** An open dictionary aggregator and downloadable offline language-data collection with **800+ bilingual dictionary archives** across KOReader, FreeDict and WikDict, plus WordNet lexical resources. The **ConceptNet source graph documents 304 languages**, but a semantic graph is not the same as 304 complete translation dictionaries. Each source is independently licensed, automatically updated in GitHub Actions and distributed from GitHub Releases. No independently verified global ranking is claimed.
+Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates third-party data with source and licensing information, checks published files and offers them through [GitHub Releases](https://github.com/danilfg/dicts/releases). The verified main collection includes **806 bilingual dictionary archives**: 74 KOReader, 305 FreeDict and 427 WikDict. These are **package counts, not unique language-pair counts**. Additionally, ConceptNet's upstream semantic graph covers 304 languages with very different levels of vocabulary coverage; that does **not** mean there are 304 complete translation dictionaries.
 
-**Dicts** is an independent, publicly accessible collection of offline bilingual dictionaries, translations, idioms, multi-word expressions and example sentences, maintained by [danilfg](https://github.com/danilfg). The goal is to let developers and learners download verified packages from **one GitHub Releases page**, rather than integrating five different hosting services.
-
-**[Download latest release](https://github.com/danilfg/dicts/releases/latest)** | **[See all bundle parts](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json)** | **[Run an update](https://github.com/danilfg/dicts/actions/workflows/update.yml)**
-
-> **IMPORTANT — OWNERSHIP AND LICENSES:** Third-party dictionary content **does not become MIT-licensed** when added to this repository. Each source and each original dictionary package retains its original copyright, source attribution and licensing conditions. MIT covers only independently authored automation code and project documentation. This repository is not endorsed by or affiliated with the source projects.
-
-
-## Verified lexical snapshots — 2026-11-16
-
-Three independently licensed collections were downloaded, checked, and actually published in this repository through the **Update all dictionary sources** GitHub Action:
-
-| Source | Verified release | Published files | Provenance and data licensing |
-|---|---|---:|---|
-| **Open English WordNet 2025** | [lex-oewn-2025-edition-v1](https://github.com/danilfg/dicts/releases/tag/lex-oewn-2025-edition-v1) | 13 files | CC BY 4.0; upstream variants plus normalized English definitions/synonyms index |
-| **Open Multilingual Wordnet 2.0** | [lex-omw-v2.0-v1](https://github.com/danilfg/dicts/releases/tag/lex-omw-v2.0-v1) | 44 files | Per-lexicon license and original citation inventory from index.toml |
-| **ConceptNet 5.7 assertions** | [lex-conceptnet-5.7.0-v1](https://github.com/danilfg/dicts/releases/tag/lex-conceptnet-5.7.0-v1) | 5 files | Full original ConceptNet 5.7 assertions in the upstream .csv.gz format (497,963,447 bytes), with source LICENSE.txt and DATA-CREDITS.md; CC BY-SA 4.0 with source-specific provenance |
-
-The exact files and SHA-256 values are recorded in **LEXICAL-MANIFEST.json** in each release; original sources retain their original copyright and credit requirements. These \`lex-*\` releases are deliberately **not marked Latest** so that the normal \`/releases/latest/download/koreader--...\` links used by the browser extension remain stable.
-
-ConceptNet's own published [language inventory](https://github.com/commonsense/conceptnet5/wiki/Languages) documents **304 languages**, while the previously verified bilingual archive collection comprises **806 language-pair ZIP packages**. These are different measures: a ConceptNet semantic edge corpus spanning 304 languages does not mean the repository has 304 complete bilingual dictionaries. We have **not verified the claim that this is the world's largest dictionary aggregator**.
-
-The existing one-button [Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml) Action now has \`lexical-resources\` jobs for all three additional providers and runs on the monthly schedule. OEWN/OMW use the latest publisher release identifiers; ConceptNet currently pins the publisher's downloadable full assertions snapshot **5.7.0**. A separately released raw or lexical dataset does not become a Chrome study-card feature until the extension reads its format.
-
-## Wordnets, semantic dictionaries and knowledge graphs
-
-This project also mirrors additional open lexical resources in independent GitHub Releases, with original licensing and author attribution:
-
-| Source | What it adds to Learn Words with Cards (after a client-side adapter) | License | Released as |
-|---|---|---|---|
-| [Open English WordNet](https://en-word.net/downloads) | English definitions, synonyms, semantic hierarchy, and relations | CC BY 4.0 | \`lex-oewn-*\` + normalized English JSON.GZ |
-| [Open Multilingual Wordnet](https://omwn.org/) | Linked multilingual synsets, related words and cross-language lexical concepts | Per component: CC, WordNet and other open terms | \`lex-omw-*\` with per-dictionary licensing inventory |
-| [ConceptNet](https://github.com/commonsense/conceptnet5/wiki/Downloads) | Common-sense semantic relations and word associations, published across **304 languages in the upstream graph** | CC BY-SA 4.0, with source-specific assertion metadata | \`lex-conceptnet-*\` full assertions dump |
-
-**Search and coverage:** A large multilingual and multi-source open dictionary aggregator, including **800+ published bilingual dictionary archives** in the independently verified 2026-11-15 collection, multilingual WordNet data and the ConceptNet knowledge graph. ConceptNet's official documentation identifies **304 languages**, but this is **not** a claim that 304 complete, bidirectional dictionaries are available, nor a claim to be the world's largest aggregator. Exactly which sources are currently published is documented by their corresponding release manifests. Each new lexical resource is built by the same [Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml) action in \`all\` mode and its monthly schedule.
-
-**Note:** The normal YouTube extension currently installs KOReader and compact enrichment archives. WordNet/ConceptNet files are **separate developer-ready distributions**; showing their definitions and relations inside popup/study cards requires an extension update. Publishing lexical files here does not automatically enable that interface.
-
+[**Download dictionaries**](https://github.com/danilfg/dicts/releases/latest) · [**All releases**](https://github.com/danilfg/dicts/releases) · [**Update sources**](https://github.com/danilfg/dicts/actions/workflows/update.yml) · [**Audit releases**](https://github.com/danilfg/dicts/actions/workflows/audit.yml)
 
 ## What is included?
 
-| Folder | Data source | Release assets | Coverage model |
+All eight source families are collected under this repository. **The main release, full text-corpus releases and lexical-network releases are separate downloads.**
+
+| Source | Contents | Download | License / attribution |
 |---|---|---|---|
-| [koreader](koreader/README.md) | [DanielGregorini/koreader-dicts](https://github.com/DanielGregorini/koreader-dicts) | KOReader-prefixed StarDict ZIP files | 74 dictionaries |
-| [freedict](freedict/README.md) | [FreeDict](https://freedict.org/downloads/) | FreeDict-prefixed StarDict ZIP files | **Auto-discovered all catalogued language pairs**, verified individually |
-| [wikdict](wikdict/README.md) | [WikDict](https://www.wikdict.com/page/download) | WikDict-prefixed StarDict ZIP files | **Every discovered available StarDict language pair** |
-| [kaikki](kaikki/README.md) | [Kaikki/Wiktextract](https://kaikki.org/dictionary/rawdata.html) | Browser enrichment + independent raw text archive release | **All currently discoverable textual Wiktionary editions** in raw release; browser index is separate |
-| [tatoeba](tatoeba/README.md) | [Tatoeba](https://tatoeba.org/en/downloads) | Browser enrichment + independent raw text archive release | **Full multilingual sentence/translation exports**; no audio |
+| [KOReader dictionaries](koreader/README.md) | 74 bilingual StarDict ZIP dictionaries | [Main release](https://github.com/danilfg/dicts/releases/latest), `koreader--*.zip` | **Per ZIP**: embedded LICENSE and ATTRIBUTION; terms vary |
+| [FreeDict](freedict/README.md) | 305 bilingual dictionary packages, automatically discovered | [Main release](https://github.com/danilfg/dicts/releases/latest), `freedict--*.zip` | **Per dictionary** TEI licensing; GPL/GFDL and other terms may apply |
+| [WikDict](wikdict/README.md) | 427 bilingual StarDict ZIPs, automatically discovered | [Main release](https://github.com/danilfg/dicts/releases/latest), `wikdict--*.zip` | CC BY-SA 4.0; credit WikDict, DBnary, Wiktionary |
+| [Kaikki / Wiktionary](kaikki/README.md) | Machine-readable Wiktionary text; a separate **limited** compact expression index | [Raw corpus](https://github.com/danilfg/dicts/releases?q=raw-kaikki), [main indexes](https://github.com/danilfg/dicts/releases/latest) | Applicable Wiktionary CC BY-SA text and any individual exceptions |
+| [Tatoeba](tatoeba/README.md) | Multilingual sentences and translation links **without audio**; selected study examples | [Raw corpus](https://github.com/danilfg/dicts/releases?q=raw-tatoeba), [main indexes](https://github.com/danilfg/dicts/releases/latest) | Text CC BY 2.0 France or explicitly designated CC0 |
+| [Open English WordNet](open-english-wordnet/README.md) | English definitions, synsets, synonyms and semantic relations; normalized English index | [Lexical release](https://github.com/danilfg/dicts/releases?q=lex-oewn) | CC BY 4.0 **plus required Princeton WordNet attribution** |
+| [Open Multilingual Wordnet](open-multilingual-wordnet/README.md) | Multilingual synsets and lexical relationships in WN-LMF | [Lexical release](https://github.com/danilfg/dicts/releases?q=lex-omw) | **Different license for each WordNet**, with individual citations |
+| [ConceptNet](conceptnet/README.md) | Common-sense graph of concepts and semantic relations, spanning 304 upstream languages | [Lexical release](https://github.com/danilfg/dicts/releases?q=lex-conceptnet) | **Data:** CC BY-SA 4.0; preserve DATA-CREDITS and provenance |
 
-Previous releases were **limited previews**. The build now automatically discovers all available FreeDict and WikDict language pairs and attempts them without a fixed six-pair allowlist; source packages that fail validation are shown as skipped in the manifest. The same **Run workflow (all)** button also mirrors **the complete available textual Kaikki Wiktionary editions and Tatoeba's multi-language text exports** to dedicated `raw-kaikki-*` and `raw-tatoeba-*` GitHub Releases. These are full upstream text archives, **not** all converted into browser lookups yet. Audio/media are excluded because their rights and technical distribution are separate. A full archive bigger than 2 GiB is transparently split into numbered parts and reassembled by concatenation. A verified release must have `SOURCE-MANIFEST.json` and original-source attribution. 
+The main archive numbers above are from a completed, independently audited release. Future releases may differ; check the published **manifest**, not only this README. A family may contain source materials in a format that cannot be read as a simple bilingual StarDict dictionary.
 
-This is **not a mirror of every language pair in every project**. Only release files listed in the machine-readable [manifest](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) are guaranteed to be part of a particular snapshot. The previous release was an **initial limited snapshot**, not the whole available corpus. It contained 74 KOReader packages, just 6 FreeDict directions, just 6 WikDict directions, 2,725 Kaikki expressions and 29,983 Tatoeba pairs. The repository is being expanded to automatic source discovery and full-text archives; **do not interpret the current manifest as a complete mirror of every upstream dictionary**. The published manifest, not the general README, records the actual scope.
+## Downloads and formats
 
-## Download the collection
+For normal language-pair downloads use [Releases → Latest](https://github.com/danilfg/dicts/releases/latest), for example [EN–RU KOReader](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip), [EN–RU FreeDict](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip), or [EN–RU WikDict](https://github.com/danilfg/dicts/releases/latest/download/wikdict--en-ru.zip).
 
-| Download | Description |
+| Format | What it means |
 |---|---|
-| [**BUNDLE-PARTS.json**](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json) | Lists **all parts** of the collection, with SHA-256 and contents. The complete collection is sharded when it exceeds the maximum single-file size |
-| [koreader--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip) | English to Russian KOReader/StarDict dictionary |
-| [koreader--ru-en.zip](https://github.com/danilfg/dicts/releases/latest/download/koreader--ru-en.zip) | Russian to English KOReader/StarDict dictionary |
-| [freedict--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip) | English to Russian FreeDict data |
-| [wikdict--en-ru.zip](https://github.com/danilfg/dicts/releases/latest/download/wikdict--en-ru.zip) | English to Russian WikDict data |
-| [enrichment--en-ru.json.gz](https://github.com/danilfg/dicts/releases/latest/download/enrichment--en-ru.json.gz) | Extra meanings, multi-word expressions and example sentences |
-| [manifest.json](https://github.com/danilfg/dicts/releases/latest/download/manifest.json) | Asset list, sources, versions, sizes, checksums, attribution and license metadata |
-| [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) | Integrity checksums of release files |
-| [THIRD-PARTY-NOTICES.md](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) | Release-specific author and license notices |
+| `koreader--PAIR.zip`, `freedict--PAIR.zip`, `wikdict--PAIR.zip` | Bilingual StarDict dictionary packages; an application must support the included files |
+| `enrichment--PAIR.json.gz` | Compact meanings and study examples (custom JSON format, **not** StarDict) |
+| `enrichments-extra--NNN.zip` | Groups of additional language indexes that must be extracted before use |
+| `lexicon--oewn-en.json.gz` | Normalized English WordNet index |
+| `lex-omw-*` / `lex-conceptnet-*` release assets | Original multilingual lexical-network files, requiring suitable readers |
+| `raw-kaikki-*` / `raw-tatoeba-*` release assets | Original textual corpora; large sources may be split into numbered `.partNNN` files |
 
-All ready-to-use files are delivered from **github.com/danilfg/dicts**, not directly from upstream hosts. Upstream URLs are accessed **by GitHub Actions during the build process**. Bundled ZIP parts are a convenience compilation, not a claim that all data share a single license. When the collection is small enough there is one `dicts-all.zip`; otherwise download every `dicts-part-NNN.zip` listed in `BUNDLE-PARTS.json`. Large raw Kaikki and Tatoeba archives are in their own raw-source releases.
+For the **entire main dictionary collection**, use [BUNDLE-PARTS.json](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json) and download every listed `dicts-part-NNN.zip`, or `dicts-all.zip` when the collection fits in a single archive. These bundles do **not** contain the separately published full raw corpora and WordNet/ConceptNet releases.
 
-Dictionary packages use StarDict data that can be read by suitable clients. Supplementary enrichment indexes use JSON.GZ and require an application adapter; they are not standalone StarDict dictionaries. Download size and expanded disk usage differ.
+The main release includes [manifest.json](https://github.com/danilfg/dicts/releases/latest/download/manifest.json), [SHA256SUMS.txt](https://github.com/danilfg/dicts/releases/latest/download/SHA256SUMS.txt) and [THIRD-PARTY-NOTICES.md](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md). Lexical releases each include `LEXICAL-MANIFEST.json` and `THIRD-PARTY-LEXICAL-NOTICES.md`; raw releases include `SOURCE-MANIFEST.json` and `ATTRIBUTION-AND-LICENSE.txt`. They identify actual published files and the relevant origin/rights information.
 
-## Verify a published release independently
+## Using the data in applications
 
-The separate [Audit published dictionary collections](https://github.com/danilfg/dicts/actions/workflows/audit.yml) workflow can be run manually and is scheduled monthly. It **does not trust a green build result alone**: it downloads the actual published manifest, checks SHA-256 for **every release file** against both GitHub's asset digests and SHA256SUMS.txt, verifies bundle-part coverage, checks source discovery counts and release status, and tests sample StarDict dictionaries and EN-RU enrichment for all four supplementary sources. It also checks the full raw Kaikki and Tatoeba release manifests and part checksums.
+Useful for offline translators, e-readers, language-learning tools, NLP applications and individual dictionary libraries. All downloads are distributed through **danilfg/dicts**. During a build, GitHub Actions may contact the original source providers.
 
-The audit reports exact source coverage in the GitHub Actions job log and step summary. For the verified 2026-11-15 snapshot, the main release contained 74 KOReader, 305 FreeDict and 427 WikDict ZIP dictionaries, plus 58 enrichment archives. All 870 published asset digests matched; 21 Kaikki text archives and 5 Tatoeba text archives passed the raw-release inventory checks.
+The current **Learn Words with Cards** extension uses KOReader and compatible compact enrichment indexes. It does **not** automatically download every independent dictionary, grouped index, raw corpus, WordNet or ConceptNet graph. The lexical-network data need additional extension-side adapters before they can appear in popup definitions or study cards.
 
-**Scope of verification:** This confirms archive presence, metadata, integrity, licensing notices and representative sample formats. It **does not** linguistically validate every dictionary entry, prove that every upstream publisher's possible format is supported, or guarantee that every source pair is directly installable into the Chrome extension. Full raw corpus releases and compact browser enrichment indexes are separate distributions.
+## Updating and verifying sources
 
-## Update every source with one button
+Use [**Update all dictionary sources**](https://github.com/danilfg/dicts/actions/workflows/update.yml), choose **main**, then **Run workflow → all**. It also runs monthly. The workflow checks the original KOReader publication (with a maintainer-hosted fallback), discovers FreeDict/WikDict packages, builds main dictionary indexes and separately publishes full text-corpus and lexical-network releases.
 
-The workflow is defined in [Update all dictionary sources](.github/workflows/update.yml).
+The **core** mode limits processing to the basic KOReader collection. OEWN and OMW track publisher release identifiers; the ConceptNet source currently uses the published 5.7.0 assertions snapshot. The main and lexical release routines avoid some duplicate publications; **raw-corpus runs may still publish new snapshots on repeated updates**. Failed optional sources must be checked in workflow logs and source-status information; a green GitHub Actions result does not by itself mean every upstream file exists in that release.
 
-1. Open [Actions / Update all dictionary sources](https://github.com/danilfg/dicts/actions/workflows/update.yml).
-2. Choose **Run workflow**, branch **main**, and mode **all**. The optional **core** mode limits the build to the required KOReader packages.
-3. GitHub Actions fetches the latest original data, validates checksums where available, retains original licensing evidence, builds language indexes, and publishes a snapshot to Releases.
-4. Verify the successful run and inspect its published manifest for included/omitted sources and individual licensing metadata.
+Run [**Audit published dictionary collections**](https://github.com/danilfg/dicts/actions/workflows/audit.yml) to check published SHA-256, bundle completeness, source notices and representative file formats. This **technical audit does not validate the accuracy of every dictionary entry**.
 
-**The single `all` workflow also creates separate raw-text source releases**: [Kaikki full archives](https://github.com/danilfg/dicts/releases?q=raw-kaikki) and [Tatoeba full text](https://github.com/danilfg/dicts/releases?q=raw-tatoeba). These releases are deliberately NOT marked Latest; the main dictionary release remains the default for the browser extension. If a text archive exceeds GitHub's 2-GiB file limit, it is published as sequential `.part001`, `.part002`, etc. The complete original file is reconstructed by joining every part in order. Each raw release ships its own SOURCE-MANIFEST.json and ATTRIBUTION-AND-LICENSE.txt. 
+## Licenses, attribution and commercial use
 
-A monthly schedule is also configured. For KOReader, the workflow checks the original author's latest release and falls back to an independently maintained [danilfg mirror](https://github.com/danilfg/koreader-dicts/releases) if required. Other families are obtained from their original publishers **only by the build runner**. The process is designed to avoid duplicate new releases when package contents have not changed.
+**The repository's [MIT LICENSE](LICENSE) covers original automation code and independently written project documentation, not the redistributed dictionaries or graph data.** A bundle does not replace the original component license. Each package must be evaluated under its own terms.
 
-Important: an optional upstream source may fail to download or pass verification. Such failures are logged; they do **not** mean every advertised data source was included. For a definitive list, read the manifest and per-source status of that release.
+| Family | Commercial-use and redistribution conditions |
+|---|---|
+| KOReader | Inspect each ZIP's original LICENSE/ATTRIBUTION (different packages may have CC BY-SA, CeCILL-C or other terms); retain all required notices |
+| FreeDict | Inspect the specific TEI rights header and comply with the applicable GPL/GFDL or other license, attribution and source-distribution requirements |
+| WikDict | Credit the original creators and Wiktionary/DBnary contributors; preserve CC BY-SA 4.0, license links, changes and applicable ShareAlike obligations |
+| Kaikki/Wiktionary | Credit original Wiktionary text, contributors and extraction source; comply with CC BY-SA for qualifying text, and assess exceptions separately |
+| Tatoeba | Retain original sentence IDs, source links, authors where available and CC BY 2.0 France or explicit CC0 status; **audio is excluded** |
+| Open English WordNet | Apply CC BY 4.0 **and** credit Princeton WordNet and the Open English WordNet team; preserve original notices and identify normalized changes |
+| Open Multilingual Wordnet | **Per-lexicon license and citation**; some index labels are incomplete shorthand, so inspect the original license before commercial adaptation |
+| ConceptNet | **CC BY-SA 4.0 for data**, original `DATA-CREDITS.md` and source provenance; its software `LICENSE.txt` is not the data license |
 
-### Disclaimer of Responsibility for Dictionary Content
+Open licenses may permit commercial use **subject to attribution, sharing and other applicable obligations**. Do not claim all files are MIT, remove credits or assume separately licensed sources may be combined into a single newly relicensed derivative database.
 
-**Dicts is an aggregator and technical distributor, not the author or editor of the dictionaries.** The repository maintainer does not write dictionary entries or conduct comprehensive linguistic reviews and **does not guarantee their accuracy, completeness, currency, translation quality, freedom from errors, or suitability for any particular purpose**. Definitions, translations, examples, and other materials are redistributed from independent sources **as is**, to the extent permitted by applicable law. Users should independently verify any consequential translations against the original sources.
+See [legal/NOTICE.md](legal/NOTICE.md), the [source license registry](legal/SOURCES.json), the [legal review checklist](docs/LEGAL-REVIEW-CHECKLIST.md), and the original source licenses. This documentation aids compliance but is not legal advice.
 
-**This disclaimer does not override mandatory legal requirements or consumer rights.** It also does not release the repository maintainer from obligations concerning lawful redistribution, copyright and license compliance, technical packaging integrity, or required information about data sources. Questions about original dictionary content should generally be directed to the original rights holders; reports of damaged archives, missing attribution, or build errors should be submitted through this repository's Issues.
+## Quality and responsibility
 
-## Licensing, attribution and commercial reuse
+**Dicts is an independent aggregator and technical distributor—not the author or editor of its source dictionaries.** The maintainer does not individually proofread source entries and does **not guarantee accuracy, completeness, currency, translation quality or fitness for any purpose**. Information is provided **as is**, to the extent permitted by law; consequential translations should be checked with authoritative sources.
 
-**A compilation is not a relicensing.** Each family has individual rights, and some individual dictionary packages have different terms from others in the same family.
+This disclaimer does **not** override mandatory statutory rights or the maintainer's obligations concerning lawful redistribution, copyright, licensing, attribution, or technical file integrity. For original linguistic mistakes contact the source author; for package/attribution problems [open an issue](https://github.com/danilfg/dicts/issues).
 
-| Source | Commercial use | Obligations and limits |
-|---|---|---|
-| KOReader packages | Depends on the **specific ZIP**; packages have distinct licenses, including CC BY-SA and CeCILL-C | Inspect and retain embedded LICENSE and ATTRIBUTION, link to the original source, keep any required derivative/share-alike notices |
-| FreeDict | Some GPL/GFDL-based packages allow commercial redistribution when their conditions are satisfied | **Read each dictionary's TEI rights header**; maintain attribution, full applicable license statements and any corresponding-source obligations; check mixed-license compatibility |
-| WikDict | CC BY-SA allows commercial use with conditions | Credit Karl Bartel/WikDict, DBnary and Wiktionary contributors as applicable; link to source and license; identify modifications and satisfy ShareAlike for adaptations |
-| Kaikki/Wiktionary | Eligible text is generally CC BY-SA 4.0, which permits commercial use subject to obligations | Credit Wiktionary contributors, source entries, license, and modifications. Separately licensed media are not distributed here |
-| Tatoeba | Text entries can carry CC BY 2.0 France or explicitly designated CC0 terms | Preserve sentence IDs, source links, author credits and applicable license conditions. No Tatoeba audio is distributed |
-| Dicts original build scripts | MIT | Keep the MIT notice on the original project code; **MIT does not cover the redistributed dictionaries** |
+## Repository structure
 
-**Do not assume you may:**
-- Label all included data MIT, public domain, or proprietary;
-- Remove source copyright/attribution records;
-- Prevent downstream recipients from exercising CC BY-SA rights on original or adapted content;
-- Treat availability on GitHub as permission to redistribute material under any desired terms;
-- Claim the original projects endorse your application;
-- Combine GPL/GFDL/CC BY-SA datasets into a new derivative database without assessing license compatibility.
+```text
+.github/workflows/  Automated updates and release auditing
+configs/            Upstream sources and options
+src/build.py        Main dictionary and study index generation
+src/mirror_raw.py   Kaikki and Tatoeba full-text snapshots
+src/sync_lexical.py Open English WordNet, OMW and ConceptNet
+src/package_release.py  Main collection archive splitting
+src/audit_release.py    Checksums and published-release audit
+tests/              Automated tests
+koreader/ freedict/ wikdict/ kaikki/ tatoeba/
+open-english-wordnet/ open-multilingual-wordnet/ conceptnet/
+legal/NOTICE.md legal/SOURCES.json
+docs/LEGAL-REVIEW-CHECKLIST.md
+LICENSE
+```
 
-Creative Commons Attribution-ShareAlike licenses can permit **paid commercial applications** and redistribution, but attribution, change notices and adapted-data ShareAlike obligations remain enforceable. Other packages may impose different or additional requirements. Selling independent software features does not confer exclusive rights to third-party dictionary text.
-
-**Consult the original license and, for a proposed commercial combined database, qualified counsel.** These repository notices are a compliance aid and do not replace legal advice.
-
-Detailed documents:
-- [Legal NOTICE](legal/NOTICE.md) — copyright, upstream authors, license separation and modifications.
-- [Source licensing registry](legal/SOURCES.json) — machine-readable data-family provenance, licensing and required notices.
-- [Release legal review checklist](docs/LEGAL-REVIEW-CHECKLIST.md) — checks before republishing or selling an integrated product.
-- [Release-specific THIRD-PARTY-NOTICES](https://github.com/danilfg/dicts/releases/latest/download/THIRD-PARTY-NOTICES.md) — details for each actually published asset.
-- The original LICENSE/ATTRIBUTION/TEI rights declarations included in individual archives.
-
-## Repository layout
-
-    dicts/
-      .github/workflows/update.yml   Update-and-publish GitHub Action
-      configs/sources.json           Configured upstream sources and language pairs
-      src/build.py                   Downloading, checking and assembling indexes
-      src/package_release.py         Combined ZIP and checksum generation
-      tests/                         Build tests
-      koreader/ freedict/ wikdict/    Dictionary source documentation
-      kaikki/ tatoeba/               Expression and example data documentation
-      legal/NOTICE.md                Copyright and third-party rights
-      legal/SOURCES.json             Source and licensing registry
-      docs/LEGAL-REVIEW-CHECKLIST.md
-      LICENSE                        MIT license for original project code only
-
-## Information for developers
-
-Each release includes a manifest with the actual asset names, language pairs, source URLs, version information, SHA-256 digests, modification status and per-asset license evidence. The enrichment format also retains original source metadata per translation, meaning and example, allowing applications to display credits beside the data.
-
-Developers should choose only the language pairs they need, verify downloaded files against their checksums, read the corresponding licenses, and preserve attribution when distributing or showing text. Using a StarDict reader does not automatically support the separate enrichment JSON.GZ format.
-
-**Issue reporting:** [Open an issue](https://github.com/danilfg/dicts/issues) with the affected package, exact dictionary entry, upstream source or Tatoeba sentence ID. Third-party lexical content is redistributed **as-is** with no editorial guarantee of accuracy, completeness or fitness for any use, subject to non-excludable statutory rights. Claims about upstream entries should be directed to the data originator; packaging, licensing, integrity and repository issues may be reported here.
+[**GitHub Releases**](https://github.com/danilfg/dicts/releases) · [**Issues**](https://github.com/danilfg/dicts/issues) · [**Third-party notices**](legal/NOTICE.md)
