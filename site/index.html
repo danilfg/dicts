@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f8fafc">
+  <meta name="description" content="Search translations from KOReader, FreeDict and WikDict across hundreds of language pairs. Explore meanings, examples, original sources and open licenses in one free multilingual dictionary.">
+  <meta property="og:title" content="Dicts — Open Multilingual Dictionary">
+  <meta property="og:description" content="Compare translations and sources from multiple openly licensed dictionaries.">
+  <title>Dicts — Open Multilingual Dictionary Search</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+<div class="app-shell">
+  <header class="site-header container">
+    <a class="brand" href="./" aria-label="Dicts home">
+      <span class="brand-mark" aria-hidden="true">D<span class="brand-spark">·</span></span>
+      <span class="brand-text">dicts<span class="brand-dot">.</span><small>open dictionary</small></span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation">
+      <a id="about-link" href="https://github.com/danilfg/dicts#what-is-included" target="_blank" rel="noopener noreferrer">About</a>
+      <a id="sources-link" href="https://github.com/danilfg/dicts/releases" target="_blank" rel="noopener noreferrer">Data sources</a>
+      <a class="github-link" href="https://github.com/danilfg/dicts" target="_blank" rel="noopener noreferrer">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17"><path fill="currentColor" d="M12 .7A11.3 11.3 0 0 0 8.4 22.7c.6.1.8-.3.8-.6v-2.1c-3.2.7-3.9-1.3-3.9-1.3-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.3.1 2 1.3 2 1.3 1.1 2 2.9 1.4 3.6 1.1.1-.8.5-1.4 1-1.8-2.6-.3-5.4-1.3-5.4-5.7 0-1.2.4-2.2 1.2-3.1-.1-.3-.6-1.5.1-3.1 0 0 1-.3 3.2 1.2A11 11 0 0 1 12 6.4c1 0 2 .1 2.9.4 2.2-1.5 3.2-1.2 3.2-1.2.7 1.6.2 2.8.1 3.1.8.9 1.2 1.9 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.6.6 1 1.4 1 2.5v3.6c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/></svg>
+        GitHub
+      </a>
+      <button id="locale-btn" class="locale-btn" type="button" title="Change language" aria-label="Switch interface language">RU</button>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="intro">
+      <div class="eyebrow"><span class="green-dot"></span><span id="eyebrow">OPEN, SOURCE-ATTRIBUTED WORD DATA</span></div>
+      <h1 id="hero-title">Every word has<br><em>more than one meaning.</em></h1>
+      <p id="hero-description" class="hero-description">Compare translations across independent dictionaries. Explore examples, definitions and the people behind the data — all in one place.</p>
+    </section>
+    <section class="search-shell" aria-label="Dictionary search">
+      <form id="search-form" autocomplete="off">
+        <div class="lang-bar">
+          <label class="lang-field" for="from">
+            <span id="from-label" class="field-label">FROM</span>
+            <select id="from" aria-label="Source language"></select>
+          </label>
+          <button id="swap" type="button" class="swap-button" aria-label="Swap languages" title="Swap languages">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h13m-4-4 4 4-4 4M17 17H4m4-4-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <label class="lang-field" for="to">
+            <span id="to-label" class="field-label">TO</span>
+            <select id="to" aria-label="Target language"></select>
+          </label>
+        </div>
+        <div class="query-bar">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.7" cy="10.7" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input id="term" type="search" name="q" placeholder="Type a word or phrase..." maxlength="120" spellcheck="false" aria-label="Word or phrase to translate">
+          <button type="submit" id="search-btn"><span id="search-label">Search</span><span aria-hidden="true">↗</span></button>
+        </div>
+      </form>
+      <div class="search-meta">
+        <div class="examples"><span id="try-label">Try:</span>
+          <button type="button" data-example="thoughtful">thoughtful</button>
+          <button type="button" data-example="bank">bank</button>
+          <button type="button" data-example="run">run</button>
+        </div>
+        <div class="coverage"><span class="tiny-circle"></span><span id="coverage-text">Loading language pairs…</span></div>
+      </div>
+    </section>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <section id="results" aria-label="Dictionary results">
+      <div class="empty-illustration" aria-hidden="true">
+        <span>re·search</span><span class="ornament">↗</span><span>translate</span>
+      </div>
+      <h2 id="empty-title">Discover a word from different perspectives.</h2>
+      <p id="empty-description">Choose two languages, then search for a word or an expression.</p>
+    </section>
+    <section class="source-directory" aria-labelledby="directory-title">
+      <div class="directory-top">
+        <div><span class="section-kicker" id="directory-eyebrow">THE DATA BEHIND THE WORDS</span><h2 id="directory-title">Independent sources, one search.</h2></div>
+        <a id="browse-data" href="https://github.com/danilfg/dicts/releases" target="_blank" rel="noopener noreferrer">Explore all datasets ↗</a>
+      </div>
+      <div class="source-grid">
+        <div class="source-tile"><span class="source-logo koreader-logo">K</span><b>KOReader</b><p id="tile-koreader">Bilingual dictionaries with original source notices.</p></div>
+        <div class="source-tile"><span class="source-logo freedict-logo">F</span><b>FreeDict</b><p id="tile-freedict">Open bilingual dictionaries and language pairs.</p></div>
+        <div class="source-tile"><span class="source-logo wikdict-logo">W</span><b>WikDict</b><p id="tile-wikdict">More translations from Wiktionary-derived data.</p></div>
+        <div class="source-tile"><span class="source-logo extra-logo">+</span><b id="tile-other-title">More data</b><p id="tile-other">Wiktionary examples, Tatoeba, WordNet and ConceptNet resources.</p></div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer container">
+    <span id="footer-disclaimer">Translations are supplied by third parties as is. See original licenses and authorship.</span>
+    <a href="https://github.com/danilfg/dicts/blob/main/legal/NOTICE.md" target="_blank" rel="noopener noreferrer" id="footer-licenses">Licenses & attribution ↗</a>
+    <span>© <a href="https://github.com/danilfg">danilfg</a> · Dicts</span>
+  </footer>
+</div>
+</body>
+</html>
