@@ -73,9 +73,19 @@ def extract_stardict(path: Path):
 def write_gzip(path: Path,obj) -> None:
     path.parent.mkdir(parents=True,exist_ok=True)
     with path.open("wb") as out:
-        with gzip.GzipFile(fileobj=out,filename="",mtime=0,mode="wb",compresslevel=9) as z:
+        with gzip.GzipFile(fileobj=out,filename="",mtime=0,mode="wb",compresslevel=5) as z:
+            # JSONEncoder yields tiny tokens, sometimes millions. Buffer them so
+            # gzip gets large chunks instead of one syscall per token.
+            pieces=[]
+            characters=0
             for piece in json.JSONEncoder(ensure_ascii=False,separators=(",",":")).iterencode(obj):
-                z.write(piece.encode("utf-8"))
+                pieces.append(piece)
+                characters+=len(piece)
+                if characters>=1_000_000:
+                    z.write("".join(pieces).encode("utf-8"))
+                    pieces=[]
+                    characters=0
+            if pieces:z.write("".join(pieces).encode("utf-8"))
 
 def enrich_records(words:dict, data:dict):
     if data.get("schema")!=1 or not isinstance(data.get("words"),dict):
