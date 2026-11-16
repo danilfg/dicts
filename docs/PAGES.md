@@ -1,76 +1,79 @@
-# GitHub Pages multilingual dictionary search
+# Dicts GitHub Pages — multilingual dictionary search
 
-**Site URL (after Pages activation):** https://danilfg.github.io/dicts/
+**Public website:** https://danilfg.github.io/dicts/
 
-The front end is in [site/](../site/) and the build code is in
-[src/build_pages.py](../src/build_pages.py). The public user interface allows
-independent selection of source and target languages, a reversible direction,
-source-specific full dictionary articles, available Kaikki meanings, Tatoeba
-examples, original publisher links and licensing information. Russian and
-English interface locales are supported. It does not fabricate translations
-using an online language model.
+The [responsive site](../site/) supports English/Russian interface language,
+independent source/target language selection, reversing the direction,
+pronunciation via browser TTS, source-separated word entries, and direct links
+to original data licenses and repository releases. It never generates
+translations with a language model.
 
-## Actual dataset and indexing
+## Sources and what is actually indexed
 
-The [GitHub Pages deployment workflow](../.github/workflows/pages.yml)
-downloads the **latest main release** source archives, not data from the
-original publishers. It parses each KOReader, FreeDict and WikDict StarDict
-ZIP and extracts complete readable text articles (not the previous compact
-260-character snippets). Dictionary entries are kept separated by their
-publisher and language pair. The published main compact enrichment indexes
-are used only for additional source-attributed meanings and examples.
+| Source | What the website displays | How indexed |
+|---|---|---|
+| KOReader | Complete readable source articles for the initial six language directions; also original articles for language directions without a compact enrichment | Selected original published StarDict ZIP files |
+| FreeDict + WikDict | Original complete articles for the initial six directions; additional available language pairs through **compact enrichment indexes** | Main dictionary release, without redistributing every full article into Pages |
+| Kaikki | Available compact Wiktionary meanings/expressions | Main release enrichment |
+| Tatoeba | Available example sentences with translations and source credits | Main release enrichment; no audio |
+| Open English WordNet | Definitions, related words, synonyms | Source-attributed English lookup shards derived from the original published WordNet |
+| Open Multilingual Wordnet | Definitions and synonyms in the currently indexed English/Spanish OMW resources | Original WN-LMF archives, cited and individually licensed |
+| ConceptNet | Semantic relations and related concepts in indexed English/Spanish datasets | Selected real edges extracted from the full official ConceptNet assertions release |
 
-Each pair's entries are partitioned into reproducible hashed, compressed JSON
-shards. The browser fetches only the shard required for a specific term,
-rather than downloading hundreds of dictionaries. The catalog is generated
-from real published pairs and records per-pair source coverage. The website
-shows exact word or phrase matches, not fuzzy or inflected search.
+**Semantic relations are not literal bilingual translations.** Full raw
+Kaikki/Tatoeba corpora and complete original WordNet/ConceptNet archives
+remain independently downloadable in [GitHub Releases](https://github.com/danilfg/dicts/releases).
+The bounded WordNet/ConceptNet Pages lookup data must not be described as
+the entire original graph.
 
-The full raw Kaikki and Tatoeba corpora, all OMW/ConceptNet data, and the
-standalone OEWN packages are **separate published resources**, not silently
-presented as complete page translations. The site may show compact Kaikki
-meanings and Tatoeba examples when included by a released enrichment index.
-A user interface for WordNet and ConceptNet needs a specialized adapter.
+## Indexing, limits and all language pairs
 
-## First-time activation
+All search data are compiled into per-pair and per-source **gzip-compressed
+hash shards**. The browser loads only the shard needed for the searched word.
+The published `data/catalog.json` is authoritative: language options appear
+only for pairs whose searchable data are actually published.
 
-In the GitHub repository open **Settings → Pages → Build and deployment →
-Source → GitHub Actions**. Administrative access is needed for this setting.
+The [all-language-pairs workflow](../.github/workflows/pages-all-pairs.yml)
+downloads the main dictionaries from **this repository's Releases**, verifies
+source checksums, and attempts to index every published language direction.
+To meet GitHub Pages' **1 GB** limit, the builder prefers compact
+FreeDict/WikDict indexes where available, while keeping complete KOReader
+archives for directions **without** compact equivalents and keeping original
+full entries for six core English/Russian/Spanish/German directions.
 
-The [Build and deploy dictionary search](../.github/workflows/pages.yml)
-Action runs when site/index code changes, can be launched via workflow_dispatch
-and runs for new published `data-*` main dictionary releases. It does not
-rebuild the website on `lex-*` or `raw-*` publications.
+This choice conserves space without dropping entire language directions.
+**It does not mean that every original source's entire dictionary is indexed
+on Pages.** Full original source ZIP files remain downloadable and source
+attribution is preserved for the entries actually displayed. The workflow
+fails if a published language direction is missing or the site exceeds the
+limit; a successful run is required before claiming expanded live coverage.
 
-A successful Pages build and deploy produces
-**https://danilfg.github.io/dicts/**. If deploy-pages reports that Pages is
-not configured, select GitHub Actions as the Pages source and rerun the job.
+The older [legacy full-ZIP Pages workflow](../.github/workflows/pages.yml)
+is manual-only: its original attempt produced over 1 GB of compressed output
+and could not be published.
 
-## Limits and copyright
+## Automatic updates
 
-GitHub Pages has a published-site size limit of **1 GB**. The index generator
-checks the site size and **fails explicitly** if the complete source-labelled
-index would exceed the supported limit. It never silently drops a language
-pair or source to fit the quota. If a future collection is too big, consider
-serving the indexes from a separate CDN or implementing a dedicated search API.
+- [All dictionary pairs](../.github/workflows/pages-all-pairs.yml): for
+  new `data-*` main releases; manually runnable and on pipeline edits
+- [WordNet and ConceptNet](../.github/workflows/pages-lexical.yml): for
+  `lex-*` releases; manually runnable and on lexical indexing edits
+- [UI-only updates](../.github/workflows/pages-quickstart.yml): deploys
+  the changed website with copied already published shards, without
+  re-downloading or rebuilding the complete dictionary collection
 
-The original source licenses still apply. The maintainer only aggregates,
-publishes and verifies technical integrity, not dictionary accuracy.
-See [Third-Party Data Notice](../legal/NOTICE.md).
+The first successful [GitHub Pages configuration](https://github.com/danilfg/dicts/settings/pages)
+requires **Build and deployment → Source → GitHub Actions**. Pages Actions
+must have Pages write and ID-token permissions. Deployment can be retried
+if GitHub temporarily rate-limits its Pages API.
 
+## Reliability, licensing and attribution
 
-## Fast publishing of interface-only updates
+The actual source packages, source status, hashes and licensing notices
+are recorded in each dataset's release manifest. The project MIT license
+does not apply to the original source content.
 
-Changes to the user interface (layout, labels, rendering) now use
-[Publish Dicts Pages interface](../.github/workflows/pages-quickstart.yml).
-This job downloads the **already published public GitHub Pages search shards**
-from danilfg.github.io/dicts/data, checks the per-language compressed-byte
-counts against catalog.json, and redeploys them alongside updated JavaScript
-and CSS. It does not call the GitHub Releases API, so ordinary UI changes
-do not consume GitHub API quotas or regenerate the original dictionaries.
-
-The separate [full dictionary index](../.github/workflows/pages.yml)
-is intended for dataset refreshes. Its most recent full build exceeded
-GitHub Pages' 1 GB limit (1.185 GB of compressed index), so extending
-the live site to all language pairs will require a segmented/offsite
-index-storage design rather than pretending the failed build succeeded.
+The website renders external content as **text, not active HTML**.
+Even source-separated entries may contain incomplete or erroneous content:
+there is no guarantee of linguistic accuracy. For per-source terms
+and redistribution obligations see [legal/NOTICE.md](../legal/NOTICE.md).
