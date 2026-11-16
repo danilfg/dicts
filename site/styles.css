@@ -27,3 +27,9 @@
 .article-raw{color:#3c4c65;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}
 .dictionary-card .definition{white-space:normal;line-height:1.6;padding:8px 0}
 .dictionary-card .definition+.definition{border-top:1px solid #edf1f7}
+
+/* Pronunciations stay distinct, readable and compact even when a provider lists variants. */
+.article-phonetic{display:flex;align-items:flex-start;flex-wrap:wrap;gap:8px 12px;padding:9px 0 10px}
+.ipa-label{color:#8c9aaf;font-weight:700;font-size:11px;line-height:25px}
+.ipa-variants{display:flex;flex-wrap:wrap;gap:5px}
+.ipa-variant{display:inline-block;color:#667e9f;background:#f4f7fb;border:1px solid #e7edf6;border-radius:7px;padding:3px 8px;font-size:12px;line-height:18px;white-space:normal;overflow-wrap:anywhere}

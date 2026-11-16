@@ -88,11 +88,16 @@ async function getShard(pair,bucketNum){
  return decoded;
 }
 function sourceInfo(pair,id){return (state.catalog.provenance[pair]||{})[id]||{}}
+function countLabel(count,type){
+ return window.DictsEntryFormat
+   ?window.DictsEntryFormat.formatCount(count,type,state.locale)
+   :count+" "+t(type);
+}
 function summaryCard(title,count,id){
  const card=el("details","dictionary-card");card.open=true;
  const summary=el("summary");
  const icon=el("span","source-avatar",id==="koreader"?"K":id==="freedict"?"F":id==="wikdict"?"W":id==="kaikki"?"K":"T");icon.dataset.source=id;
- const heading=el("span","source-title");heading.append(el("b","",title),el("small","",count+" "+t("entries")));
+ const heading=el("span","source-title");heading.append(el("b","",title),el("small","",countLabel(count,"entries")));
  summary.append(icon,heading,el("span","chevron","⌄"));card.append(summary);
  const body=el("div","source-body");card.append(body);
  return {card,body};
@@ -114,7 +119,12 @@ function addFormattedArticle(container,original,from,to){
  const article=el("div","dictionary-article");
  for(const line of lines){
     if(line.kind==="phonetic"){
-      const p=el("div","article-phonetic",line.text);article.append(p);continue
+      const p=el("div","article-phonetic");
+      p.append(el("span","ipa-label",state.locale==="ru"?"Транскрипция":"Pronunciation"));
+      const chips=el("div","ipa-variants");
+      const variants=format.phoneticVariants(line.text);
+      for(const variant of variants)chips.append(el("span","ipa-variant",variant));
+      p.append(chips);article.append(p);continue
     }
     if(line.kind==="part"){
       article.append(el("div","article-part",line.text));continue
@@ -170,14 +180,21 @@ function renderTranslations(word,pair,entry){
       const d=el("div","definition");d.append(el("div","example-text",example.text));
       if(example.translation)d.append(el("div","example-translation",example.translation));
       const credit=el("div","example-author");
-      if(example.author)credit.append(document.createTextNode(example.author+" · "));
-      if(example.source_url)credit.append(anchor(t("source")+" ↗",example.source_url));
-      if(example.license)credit.append(document.createTextNode(" · "+example.license));
-      d.append(credit);body.append(d);
+      const parts=[];
+      const author=window.DictsEntryFormat?.cleanCredit(example.author)||"";
+      if(author)parts.push(document.createTextNode(author));
+      if(example.source_url)parts.push(anchor(t("source")+" ↗",example.source_url));
+      if(example.license)parts.push(document.createTextNode(example.license));
+      for(const [index,item] of parts.entries()){
+        if(index>0)credit.append(document.createTextNode(" · "));
+        credit.append(item);
+      }
+      if(parts.length)d.append(credit);
+      body.append(d);
     }
     fragment.append(card);sourceCount++;
  }
- return {fragment,sourceCount,total:total+meanings.length+examples.length,examples:examples.length}
+ return {fragment,sourceCount,total:total+meanings.length,examples:examples.length}
 }
 function render(word,pair,entry,metadata){
  const target=$("results");target.replaceChildren();
@@ -192,8 +209,8 @@ function render(word,pair,entry,metadata){
  buttons.append(speak,copy);heading.append(left,buttons);target.append(heading);
  const content=renderTranslations(word,pair,entry);
  const badges=el("div","result-summary");
- badges.append(el("span","count-pill",content.sourceCount+" "+t("sourceCount")),el("span","count-pill",content.total+" "+t("meanings")));
- if(content.examples)badges.append(el("span","count-pill",content.examples+" "+t("examples")));
+ badges.append(el("span","count-pill",countLabel(content.sourceCount,"sourceCount")),el("span","count-pill",countLabel(content.total,"entries")));
+ if(content.examples)badges.append(el("span","count-pill",countLabel(content.examples,"examples")));
  target.append(badges,content.fragment);
 }
 async function search(){

@@ -79,5 +79,37 @@ function parseEntry(input,from,to){
   const lines=text.split(/\n/).map(s=>s.trim()).filter(Boolean);
   return lines.map(line=>parseLine(line,from,to)).filter(Boolean);
 }
-return {parseEntry,parseLine,splitSourceAndTarget,languageScript};
+const RUSSIAN_FORMS={
+  entries:["запись","записи","записей"],
+  meanings:["значение","значения","значений"],
+  sourceCount:["источник","источника","источников"],
+  examples:["пример","примера","примеров"]
+};
+const ENGLISH_FORMS={entries:["entry","entries"],meanings:["meaning","meanings"],sourceCount:["source","sources"],examples:["example","examples"]};
+function formatCount(count,type,locale="en"){
+  const n=Math.max(0,Math.trunc(Number(count)||0));
+  if(locale==="ru"&&RUSSIAN_FORMS[type]){
+    const forms=RUSSIAN_FORMS[type];
+    const tail=n%10,tail2=n%100;
+    const index=tail2>=11&&tail2<=14?2:tail===1?0:tail>=2&&tail<=4?1:2;
+    return n+" "+forms[index];
+  }
+  const forms=ENGLISH_FORMS[type];
+  return n+" "+(forms?(n===1?forms[0]:forms[1]):type);
+}
+function cleanCredit(value){
+  if(value==null)return "";
+  const text=String(value).trim();
+  return /^(?:\\N|N\/A|NULL|NONE|UNKNOWN|-|—)?$/i.test(text)?"":text;
+}
+function phoneticVariants(input){
+  const text=String(input||"").trim();
+  if(!text)return [];
+  const tokens=[...text.matchAll(/\/[^/\r\n]{2,140}\//gu)].map(m=>m[0]);
+  if(!tokens.length)return [text];
+  const residue=text.replace(/\/[^/\r\n]{2,140}\//gu,"").replace(/[\s,;|،、·]+/gu,"");
+  if(residue)return [text];
+  return [...new Set(tokens)];
+}
+return {parseEntry,parseLine,splitSourceAndTarget,languageScript,formatCount,cleanCredit,phoneticVariants};
 });
