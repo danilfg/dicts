@@ -1,70 +1,45 @@
-name: Publish first dictionary Pages (quick start)
+name: Publish Dicts Pages interface
+
 on:
   push:
     branches: [main]
     paths:
       - .github/workflows/pages-quickstart.yml
-      - src/build_pages.py
       - site/**
+      - src/refresh_pages_data.py
       - tests/test_entry_format.cjs
   workflow_dispatch:
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 concurrency:
-  group: pages-quickstart
+  group: pages-interface-deployment
   cancel-in-progress: true
+
 jobs:
   build:
     if: github.repository == 'danilfg/dicts'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Test dictionary parser and browser application
+      - name: Verify JavaScript, formatting and build tests
         run: |
           set -euo pipefail
           node --check site/app.js
           node --check site/entry-format.js
           node --test tests/test_entry_format.cjs
           python -m unittest discover -s tests -v
-      - name: Download 6 verified language directions for first live searchable site
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
+      - name: Reuse all existing published search shards without GitHub API calls
         run: |
-          set -euo pipefail
-          mkdir -p downloads
-          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
-          [[ "$tag" == data-* ]]
-          echo "$tag" > downloads/.release-tag
-          args=(--pattern manifest.json)
-          for pair in en-ru ru-en en-es es-en en-de de-en; do
-            for source in koreader freedict wikdict; do
-              args+=(--pattern "$source--$pair.zip")
-            done
-            args+=(--pattern "enrichment--$pair.json.gz")
-          done
-          gh release download "$tag" --repo "$GITHUB_REPOSITORY" \
-            "${args[@]}" --dir downloads
-          test "$(find downloads -name '*--*.zip' | wc -l)" -ge 18
-          test -s downloads/manifest.json
-      - name: Generate real searchable dictionary shards for first launch
-        run: |
-          python src/build_pages.py \
-            --download-dir downloads --manifest downloads/manifest.json \
-            --site-dir site --release-tag "$(cat downloads/.release-tag)"
-          python - <<'PY'
-          import json,pathlib
-          c=json.loads(pathlib.Path('site/data/catalog.json').read_text())
-          p={x['pair'] for x in c['pairs']}
-          assert {'en-ru','ru-en','en-es','es-en','en-de','de-en'}<=p, p
-          print('First live Pages has',len(p),'verified language pairs')
-          PY
+          python src/refresh_pages_data.py --site-dir site
+          test -s site/data/catalog.json
           du -sh site
       - uses: actions/upload-pages-artifact@v3
         with:

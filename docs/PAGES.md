@@ -57,3 +57,20 @@ serving the indexes from a separate CDN or implementing a dedicated search API.
 The original source licenses still apply. The maintainer only aggregates,
 publishes and verifies technical integrity, not dictionary accuracy.
 See [Third-Party Data Notice](../legal/NOTICE.md).
+
+
+## Fast publishing of interface-only updates
+
+Changes to the user interface (layout, labels, rendering) now use
+[Publish Dicts Pages interface](../.github/workflows/pages-quickstart.yml).
+This job downloads the **already published public GitHub Pages search shards**
+from danilfg.github.io/dicts/data, checks the per-language compressed-byte
+counts against catalog.json, and redeploys them alongside updated JavaScript
+and CSS. It does not call the GitHub Releases API, so ordinary UI changes
+do not consume GitHub API quotas or regenerate the original dictionaries.
+
+The separate [full dictionary index](../.github/workflows/pages.yml)
+is intended for dataset refreshes. Its most recent full build exceeded
+GitHub Pages' 1 GB limit (1.185 GB of compressed index), so extending
+the live site to all language pairs will require a segmented/offsite
+index-storage design rather than pretending the failed build succeeded.

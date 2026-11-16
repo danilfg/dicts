@@ -1,13 +1,6 @@
 name: Build and deploy dictionary search (GitHub Pages)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/pages.yml
-      - site/**
-      - src/build_pages.py
-      - tests/test_build_pages.py
   release:
     types: [published]
   workflow_dispatch:
