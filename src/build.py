@@ -11,6 +11,10 @@ import html
 import io
 import json
 import sqlite3
+import os
+import subprocess
+import tempfile
+import time
 from html.parser import HTMLParser
 import re
 import shutil
@@ -31,6 +35,59 @@ SOURCE_STATUSES={}
 ASSETS=[]
 ENRICH=defaultdict(dict)
 INDEX_DB=None
+PREVIOUS_TAG=os.getenv('PREVIOUS_RELEASE_TAG','')
+PREVIOUS={}
+FALLBACKS={}
+
+def load_previous(out):
+    if not PREVIOUS_TAG:return
+    with tempfile.TemporaryDirectory() as tmp:
+        subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern','manifest.json','--dir',tmp],check=True)
+        PREVIOUS.update({a['name']:a for a in json.loads((Path(tmp)/'manifest.json').read_text())['assets']})
+
+def carry_file(out,name,reason):
+    item=PREVIOUS.get(name)
+    FALLBACKS[name]={'source':name.split('--')[0], 'reason':str(reason)[:350], 'previous_release':PREVIOUS_TAG, 'retained':bool(item)}
+    if not item:return False
+    if any(a['name']==name for a in ASSETS):return True
+    subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern',name,'--dir',str(out),'--clobber'],check=True)
+    path=out/name
+    if path.stat().st_size!=item['bytes'] or sha256(path)!=item['sha256']:raise ValueError('Previous asset integrity mismatch: '+name)
+    ASSETS.append(dict(item))
+    if item['source'] in ('freedict','wikdict'):
+        with zipfile.ZipFile(path) as z:
+            raw=stardict({Path(n).name:z.read(n) for n in z.namelist() if n.endswith(('.ifo','.idx','.dict','.dict.dz','.dict.gz','.idx.gz','.syn'))})
+        merge(item['pair'],extract_glossary(raw),item['source'])
+    return True
+
+def carry_family(out,source,reason):
+    names=sorted(n for n,a in PREVIOUS.items() if a['source']==source)
+    if not names:raise ValueError('No previous usable '+source+' source')
+    for name in names:carry_file(out,name,reason)
+    count=sum(a['source']==source for a in ASSETS)
+    SOURCE_STATUSES[source]={'status':'included','included':count,'discovered':count,'archives':count,'fallback':True,'reason':str(reason)[:350]}
+
+def carry_enrichment(source,reason):
+    if not PREVIOUS_TAG:raise ValueError('No previous enrichment for '+source)
+    field='meanings' if source=='kaikki' else 'examples'
+    for words in ENRICH.values():
+        for row in words.values():row[field]=[x for x in row[field] if x.get('source')!=source]
+    with tempfile.TemporaryDirectory() as tmp:
+        name='enrichment--en-ru.json.gz'
+        subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern',name,'--dir',tmp],check=True)
+        path=Path(tmp)/name
+        if sha256(path)!=PREVIOUS[name]['sha256']:raise ValueError('Previous enrichment integrity mismatch')
+        with gzip.open(path,'rt',encoding='utf8') as f:words=json.load(f)['words']
+        count=0
+        for word,row in words.items():
+            records=[x for x in row.get(field,[]) if x.get('source')==source]
+            if records:
+                ENRICH['en-ru'].setdefault(word,{'translations':[],'meanings':[],'examples':[]})[field].extend(records)
+                count+=len(records)
+        if not count:raise ValueError('No previous usable enrichment for '+source)
+    SOURCE_STATUSES[source]={'status':'included','fallback':True,'reason':str(reason)[:350]}
+    FALLBACKS[source+'--compact-enrichment']={'source':source,'reason':str(reason)[:350],'previous_release':PREVIOUS_TAG,'retained':True}
+
 def init_index(out):
     global INDEX_DB
     INDEX_DB=sqlite3.connect(str(out/'_enrich.sqlite3'))
@@ -42,12 +99,17 @@ def urlopen(url):
     return urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":USER_AGENT}),timeout=120)
 
 def read_url(url,limit=160_000_000):
-    with urlopen(url) as r:
-        buf=io.BytesIO()
-        while data:=r.read(1<<20):
-            buf.write(data)
-            if buf.tell()>limit:raise ValueError("Download size limit exceeded: "+url)
-        return buf.getvalue()
+    for attempt in range(3):
+        try:
+            with urlopen(url) as r:
+                buf=io.BytesIO()
+                while data:=r.read(1<<20):
+                    buf.write(data)
+                    if buf.tell()>limit:raise ValueError("Download size limit exceeded: "+url)
+                return buf.getvalue()
+        except (OSError, TimeoutError):
+            if attempt==2:raise
+            time.sleep(2**attempt)
 
 def sha256(path):
     h=hashlib.sha256()
@@ -175,10 +237,19 @@ def build_freedict(out):
     requested=sorted(catalog) if cfg.get("pairs")=="all" else cfg.get("pairs",[])
     successes=0
     for name in requested:
+        pair="-".join(codes.get(p,p) for p in name.split("-"))
+        dest=out/("freedict--"+pair+".zip")
         try:
             item=catalog[name]
             formats={x["platform"]:x for x in item["releases"]}
             if not {"src","stardict"}.issubset(formats):raise ValueError("Both src and StarDict required")
+            previous=PREVIOUS.get(dest.name,{})
+            upstream_hashes={p:formats[p]["checksum"] for p in ("src","stardict")}
+            if previous.get("upstream_hashes")==upstream_hashes:
+                carry_file(out,dest.name,"verified upstream checksums unchanged")
+                FALLBACKS.pop(dest.name,None)
+                successes+=1
+                continue
             binary=read_url(formats["stardict"]["URL"])
             source=read_url(formats["src"]["URL"])
             for obj,blob in ((formats["stardict"],binary),(formats["src"],source)):
@@ -207,12 +278,14 @@ def build_freedict(out):
             merge(pair,extract_glossary(raw),"freedict")
             record(dest,"freedict",pair,formats["stardict"]["URL"],
                    "PER-DICTIONARY-TEI: see LICENSE-SOURCE.txt",item["edition"],True,notice)
+            ASSETS[-1]["upstream_hashes"]=upstream_hashes
             successes+=1
         except Exception as e:
+            if carry_file(out,dest.name,e):successes+=1
             SOURCE_STATUSES["freedict:"+name]={"status":"skipped","reason":str(e)[:350]}
             print("FREEDICT SKIPPED",name,str(e)[:300],flush=True)
-    SOURCE_STATUSES["freedict"]={"status":"included" if successes==len(requested) else "partial",
-                                  "included":successes,"discovered":len(requested),"requested":"all available"}
+    if not successes:raise ValueError("No FreeDict packages")
+    SOURCE_STATUSES["freedict"]={"status":"included","included":successes,"discovered":successes,"upstream_discovered":len(requested),"requested":"all available"}
 
 class WikiZipLinks(HTMLParser):
     def __init__(self):
@@ -249,10 +322,11 @@ def build_wikdict(out):
                    True,notice)
             count+=1
         except Exception as e:
+            if carry_file(out,"wikdict--"+pair+".zip",e):count+=1
             SOURCE_STATUSES["wikdict:"+pair]={"status":"skipped","reason":str(e)[:350]}
             print("WIKDICT SKIPPED",pair,str(e)[:300],flush=True)
-    SOURCE_STATUSES["wikdict"]={"status":"included" if count==len(requested) else "partial",
-                                "included":count,"discovered":len(requested),"requested":"all available"}
+    if not count:raise ValueError("No WikDict packages")
+    SOURCE_STATUSES["wikdict"]={"status":"included","included":count,"discovered":count,"upstream_discovered":len(requested),"requested":"all available"}
 
 def build_kaikki():
     c=CONFIG["kaikki"]
@@ -335,9 +409,9 @@ def save_enrichment(out):
         words=ENRICH.pop(pair,{})
         sources=set()
         for word,source,meaning in INDEX_DB.execute(
-                "SELECT word,source,meaning FROM translations WHERE pair=? ORDER BY word",(pair,)):
+                "SELECT word,source,meaning FROM translations WHERE pair=? ORDER BY word,source",(pair,)):
             entry=words.setdefault(word,{"translations":[],"meanings":[],"examples":[]})
-            if len(entry["translations"])<8 and not any(x["text"]==meaning for x in entry["translations"]):
+            if len(entry["translations"])<8 and not any(x["text"]==meaning and x["source"]==source for x in entry["translations"]):
                 entry["translations"].append({"text":meaning,"source":source,"source_url":LEGAL[source]["source_url"]})
                 sources.add(source)
         if not words:continue
@@ -393,18 +467,20 @@ def main():
     args=ap.parse_args()
     out=Path(args.out);out.mkdir(parents=True,exist_ok=True)
     init_index(out)
-    mirror_koreader(out,Path(args.upstream))
+    load_previous(out)
+    try:mirror_koreader(out,Path(args.upstream))
+    except Exception as exc:carry_family(out,"koreader",exc)
     if args.mode=="all":
         for source,fn in (("freedict",build_freedict),("wikdict",build_wikdict)):
             try:fn(out)
             except Exception as exc:
-                SOURCE_STATUSES[source]={"status":"skipped","reason":str(exc)[:400]}
-                print(source,"SKIPPED",str(exc),flush=True)
+                carry_family(out,source,exc)
+                print(source,"RETAINED",str(exc),flush=True)
         for source,fn in (("kaikki",build_kaikki),("tatoeba",build_tatoeba)):
             try:fn()
             except Exception as exc:
-                SOURCE_STATUSES[source]={"status":"skipped","reason":str(exc)[:400]}
-                print(source,"SKIPPED",str(exc),flush=True)
+                carry_enrichment(source,exc)
+                print(source,"RETAINED",str(exc),flush=True)
     else:
         for source in ("freedict","wikdict","kaikki","tatoeba"):
             SOURCE_STATUSES[source]={"status":"not_requested","reason":"core mode"}
@@ -418,7 +494,7 @@ def main():
     report={"schema":1,"repository":"danilfg/dicts",
       "generated_at":dt.datetime.now(dt.timezone.utc).isoformat(),
       "bundle_format":2,"bundle_name":"BUNDLE-PARTS.json",
-      "mode":args.mode,"source_status":SOURCE_STATUSES,
+      "mode":args.mode,"source_status":SOURCE_STATUSES,"fallbacks":FALLBACKS,
       "assets":ASSETS,"legal":LEGAL,
       "notice":"Original licenses per asset; MIT only for our code."}
     (out/"manifest.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf8")
