@@ -29,7 +29,7 @@ def release(tag):
         pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases?per_page=100"))
         return next(r for page in pages for r in page if r["tag_name"]==tag)
     return json.loads(gh("api",f"repos/{REPO}/releases/tags/{tag}"))
-def inventory(tag):
+def physical_inventory(tag):
     rel=release(tag)
     # The release response includes the assets; use pagination if the
     # response looks capped, and always validate completeness afterwards.
@@ -37,6 +37,13 @@ def inventory(tag):
     rows=[a for page in pages for a in page]
     assert len({a["name"] for a in rows})==len(rows)
     return {a["name"]:a for a in rows}
+def inventory(tag):
+    from storage import expand
+    for attempt in range(5):
+        try:return expand(tag,physical_inventory(tag))
+        except (subprocess.CalledProcessError,ValueError,FileNotFoundError):
+            if attempt==4:raise
+            time.sleep(2*(attempt+1))
 def digest(a):
     d=a.get("digest") or ""
     if not re.fullmatch(r"sha256:[0-9a-f]{64}",d) or not 0<a["size"]<2**31:
@@ -45,7 +52,8 @@ def digest(a):
 def rename(source,name):
     return source+"--"+name if source!="main" and name in RAW+LEX else name
 def upload(tag,paths):
-    subprocess.run(["gh","release","upload",tag,*map(str,paths),"-R",REPO],check=True)
+    from storage import publish
+    publish(tag,paths)
 def download(a,path):
     url=a["browser_download_url"]
     if not url.startswith("https://github.com/"+REPO+"/releases/download/"):raise ValueError("Foreign asset")
@@ -81,7 +89,8 @@ def validate(tag,assets,folder):
         if size is not None and a["size"]!=size:raise ValueError("Size mismatch: "+name)
     def doc(name):
         check(name)
-        subprocess.run(["gh","release","download",tag,"-R",REPO,"--pattern",name,"--dir",str(folder)],check=True)
+        from normalized_pack import pull
+        pull(tag,[name],folder,assets)
         data=(folder/name).read_bytes()
         if hashlib.sha256(data).hexdigest()!=digest(assets[name]):raise ValueError("Metadata checksum mismatch "+name)
         return json.loads(data)
@@ -137,6 +146,16 @@ def validate(tag,assets,folder):
         if index["schema"]!=1 or index["group"]!=group or not index["members"]:raise ValueError("Invalid normalized group "+group)
         if group not in ("pages","pages-lexical"):app_indexes[group]=index
         group_names={name}
+        if index.get("layout")==LAYOUT:
+            for member,row in index["members"].items():
+                n=row["name"]
+                if not n.startswith("unit--"+group+"--") or not n.endswith(".zip") or not assets[n].get("oci"):
+                    raise ValueError("Invalid normalized OCI block "+member)
+                check(n,row["sha256"],row["bytes"]);group_names.add(n)
+            if names&group_names:raise ValueError("Normalized name collision")
+            names|=group_names
+            groups["normalized-"+group]={"assets":sorted(group_names),"manifest":name}
+            continue
         packs={p["name"]:p for p in index["packages"]}
         if not packs:raise ValueError("Missing normalized packages "+group)
         for n,p in packs.items():
@@ -150,7 +169,7 @@ def validate(tag,assets,folder):
         groups["normalized-"+group]={"assets":sorted(group_names),"manifest":name}
     if "PAIR-INDEX.json" in assets:
         pair_index=doc("PAIR-INDEX.json")
-        expected=build_pair_index(tag,app_indexes,f"https://github.com/{REPO}/releases/download/{tag}/")
+        expected=build_pair_index(tag,app_indexes,f"https://github.com/{REPO}/releases/download/{tag}/",assets)
         if pair_index!=expected:raise ValueError("Pair index mismatch")
         names.add("PAIR-INDEX.json")
     if "LEXICAL-INDEX.json" in assets:
@@ -163,6 +182,12 @@ def validate(tag,assets,folder):
             if item["name"]!="PAIR-INDEX.json":raise ValueError("Invalid pair index name")
             check(item["name"],item["sha256"],item["bytes"])
         names.add("LEXICAL-INDEX.json")
+    from storage import RECEIPT
+    transport={n for n in assets if RECEIPT.fullmatch(n)}
+    legal={n for n in ("SOURCES.json","NOTICE.md","LICENSE") if n in assets}
+    names|=transport|legal
+    if transport:groups["transport"]={"assets":sorted(transport),"registry":"ghcr.io/danilfg/dicts-data"}
+    if legal:groups["legal"]={"assets":sorted(legal)}
     if names!=set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}:
         raise ValueError("Unexpected/missing files: "+repr(sorted(names^(set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}))[:20]))
     for name in names:check(name)
@@ -181,11 +206,12 @@ def finalize(tag):
             name=f"normalized--{group}-index.json"
             idx["groups"][group]={"index":name,"bytes":assets[name]["size"],"sha256":digest(assets[name])}
         app_indexes={g:json.loads((folder/f"normalized--{g}-index.json").read_text()) for g in GROUPS if g not in ("pages","pages-lexical")}
-        pair_index=build_pair_index(tag,app_indexes,idx["download_base"])
+        pair_index=build_pair_index(tag,app_indexes,idx["download_base"],assets)
         pairfile=folder/"PAIR-INDEX.json"
         pairfile.write_text(json.dumps(pair_index,ensure_ascii=False,separators=(",",":"))+"\n")
         idx["pair_index"]={"name":pairfile.name,"bytes":pairfile.stat().st_size,"sha256":hashlib.sha256(pairfile.read_bytes()).hexdigest()}
-        idx["format"]="pair-range-v1"
+        idx["format"]=LAYOUT
+        idx["registry"]="ghcr.io/danilfg/dicts-data"
         idxfile=folder/"LEXICAL-INDEX.json"
         idxfile.write_text(json.dumps(idx,indent=2)+"\n")
         upload(tag,[idxfile,pairfile])
@@ -193,8 +219,13 @@ def finalize(tag):
         # Use a fresh directory because validate downloads manifests.
         with tempfile.TemporaryDirectory() as fresh:
             groups=validate(tag,assets,Path(fresh))
-        entries=[{"name":n,"bytes":assets[n]["size"],"sha256":digest(assets[n])} for n in sorted(assets)]
-        if len(entries)+2>1000:raise ValueError("Asset limit exceeded")
+        entries=[dict({"name":n,"bytes":assets[n]["size"],"sha256":digest(assets[n])},**({"oci":assets[n]["oci"]} if assets[n].get("oci") else {})) for n in sorted(assets)]
+        if len(physical_inventory(tag))+2>1000:raise ValueError("Physical asset limit exceeded")
+        from storage import REGISTRY
+        from public_client import public_blob
+        for group,g in pair_index["groups"].items():
+            blocks=next(iter(g["pairs"].values()),None) or next(iter(g["languages"].values()),None)
+            if blocks:public_blob(REGISTRY,blocks[0])
         master=folder/"RELEASE-MANIFEST.json"
         master.write_text(json.dumps({"schema":1,"version":tag,"sources":["koreader","freedict","wikdict",*tuple(OLD)[1:]],"groups":groups,"assets":entries,"download_base":f"https://github.com/{REPO}/releases/download/{tag}/"},indent=2)+"\n")
         checks=folder/"SHA256SUMS.txt"
@@ -209,15 +240,17 @@ def finalize(tag):
         notes=f"""## Complete dictionary collection — {tag}
 All eight source families in a single version: KOReader, FreeDict, WikDict, Kaikki/Wiktionary, Tatoeba, Open English WordNet, Open Multilingual Wordnet and ConceptNet.
 
-**{len(final)} assets · {sum(a['size'] for a in final.values())/1e9:.2f} GB** (including convenience bundles).
+**{len(final)} logical files · {sum(a['size'] for a in final.values())/1e9:.2f} GB** (including convenience bundles), {len(physical_inventory(tag))} release metadata assets.
+
+OCI data package: [ghcr.io/danilfg/dicts-data](https://github.com/danilfg/dicts/pkgs/container/dicts-data).
 
 - [Online dictionary](https://danilfg.github.io/dicts/)
 - [Complete file inventory](https://github.com/{REPO}/releases/download/{tag}/RELEASE-MANIFEST.json)
 - [SHA-256 verification](https://github.com/{REPO}/releases/download/{tag}/SHA256SUMS.txt)
-- Bilingual ZIPs and compact indexes: individual files or BUNDLE-PARTS.json.
+- Bilingual ZIPs, compact indexes and bundles: resolve names via RELEASE-MANIFEST.json and fetch the OCI blobs by digest.
 - Full text corpora: kaikki-- and tatoeba--; join numbered parts in order.
 - WordNet and ConceptNet: oewn--, omw--, conceptnet-- and lexicon-- files.
-- [Pair-selective application catalog](https://github.com/{REPO}/releases/download/{tag}/PAIR-INDEX.json) — download only selected direction and its two languages using verified byte ranges.\n- [Normalized group inventory](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all sources; compact corpus/graph subsets).
+- [Pair-selective application catalog](https://github.com/{REPO}/releases/download/{tag}/PAIR-INDEX.json) — download only selected direction and its two languages as verified independent OCI blobs.\n- [Normalized group inventory](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all sources; compact corpus/graph subsets).
 - [Source refresh report](https://github.com/{REPO}/releases/download/{tag}/REFRESH-REPORT.json) (exact changed assets and retained sources).
 - Preserve original licenses and source-specific attribution. Third-party data are not covered by the project MIT license.
 """
