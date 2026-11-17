@@ -22,7 +22,7 @@ translations with a language model.
 
 **Semantic relations are not literal bilingual translations.** Full raw
 Kaikki/Tatoeba corpora and complete original WordNet/ConceptNet archives
-remain independently downloadable in [GitHub Releases](https://github.com/danilfg/dicts/releases).
+are independently named assets in unified versions in [GitHub Releases](https://github.com/danilfg/dicts/releases).
 The bounded WordNet/ConceptNet Pages lookup data must not be described as
 the entire original graph.
 
@@ -55,9 +55,9 @@ and could not be published.
 ## Automatic updates
 
 - [All dictionary pairs](../.github/workflows/pages-all-pairs.yml): for
-  new `data-*` main releases; manually runnable and on pipeline edits
+  successful unified update runs, new dated versions and manual runs
 - [WordNet and ConceptNet](../.github/workflows/pages-lexical.yml): for
-  `lex-*` releases; manually runnable and on lexical indexing edits
+  new dated versions and manual runs; historical lexical downloads remain available
 - [UI-only updates](../.github/workflows/pages-quickstart.yml): deploys
   the changed website with copied already published shards, without
   re-downloading or rebuilding the complete dictionary collection
