@@ -12,6 +12,7 @@ import time
 import urllib.request
 from release_changes import diff_plan, confirm_zip_changes
 from normalized_pack import GROUPS
+from pair_pack import build_pair_index,LAYOUT
 from pathlib import Path
 REPO="danilfg/dicts"
 OLD={"main":"data-20261116-093517","kaikki":"raw-kaikki-20261116-090335",
@@ -128,11 +129,13 @@ def validate(tag,assets,folder):
             if not row.get("retained") or not row.get("reason"):raise ValueError("Bad retention record")
             names.add(n)
         groups["refresh"]={"assets":["REFRESH-REPORT.json"]+notes,"manifest":"REFRESH-REPORT.json"}
+    app_indexes={}
     for group in GROUPS:
         name=f"normalized--{group}-index.json"
         if name not in assets:continue
         index=doc(name)
         if index["schema"]!=1 or index["group"]!=group or not index["members"]:raise ValueError("Invalid normalized group "+group)
+        if group not in ("pages","pages-lexical"):app_indexes[group]=index
         group_names={name}
         packs={p["name"]:p for p in index["packages"]}
         if not packs:raise ValueError("Missing normalized packages "+group)
@@ -145,11 +148,20 @@ def validate(tag,assets,folder):
         if names&group_names:raise ValueError("Normalized name collision")
         names|=group_names
         groups["normalized-"+group]={"assets":sorted(group_names),"manifest":name}
+    if "PAIR-INDEX.json" in assets:
+        pair_index=doc("PAIR-INDEX.json")
+        expected=build_pair_index(tag,app_indexes,f"https://github.com/{REPO}/releases/download/{tag}/")
+        if pair_index!=expected:raise ValueError("Pair index mismatch")
+        names.add("PAIR-INDEX.json")
     if "LEXICAL-INDEX.json" in assets:
         idx=doc("LEXICAL-INDEX.json")
         if idx["version"]!=tag or set(idx["groups"])!=set(GROUPS):raise ValueError("Invalid master normalized index")
         for group,item in idx["groups"].items():
             check(item["index"],item["sha256"],item["bytes"])
+        if "pair_index" in idx:
+            item=idx["pair_index"]
+            if item["name"]!="PAIR-INDEX.json":raise ValueError("Invalid pair index name")
+            check(item["name"],item["sha256"],item["bytes"])
         names.add("LEXICAL-INDEX.json")
     if names!=set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}:
         raise ValueError("Unexpected/missing files: "+repr(sorted(names^(set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}))[:20]))
@@ -168,9 +180,15 @@ def finalize(tag):
         for group in GROUPS:
             name=f"normalized--{group}-index.json"
             idx["groups"][group]={"index":name,"bytes":assets[name]["size"],"sha256":digest(assets[name])}
+        app_indexes={g:json.loads((folder/f"normalized--{g}-index.json").read_text()) for g in GROUPS if g not in ("pages","pages-lexical")}
+        pair_index=build_pair_index(tag,app_indexes,idx["download_base"])
+        pairfile=folder/"PAIR-INDEX.json"
+        pairfile.write_text(json.dumps(pair_index,ensure_ascii=False,separators=(",",":"))+"\n")
+        idx["pair_index"]={"name":pairfile.name,"bytes":pairfile.stat().st_size,"sha256":hashlib.sha256(pairfile.read_bytes()).hexdigest()}
+        idx["format"]="pair-range-v1"
         idxfile=folder/"LEXICAL-INDEX.json"
         idxfile.write_text(json.dumps(idx,indent=2)+"\n")
-        upload(tag,[idxfile])
+        upload(tag,[idxfile,pairfile])
         assets=inventory(tag)
         # Use a fresh directory because validate downloads manifests.
         with tempfile.TemporaryDirectory() as fresh:
@@ -199,7 +217,7 @@ All eight source families in a single version: KOReader, FreeDict, WikDict, Kaik
 - Bilingual ZIPs and compact indexes: individual files or BUNDLE-PARTS.json.
 - Full text corpora: kaikki-- and tatoeba--; join numbered parts in order.
 - WordNet and ConceptNet: oewn--, omw--, conceptnet-- and lexicon-- files.
-- [Normalized application indexes](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all eight sources; compact corpus/graph subsets).
+- [Pair-selective application catalog](https://github.com/{REPO}/releases/download/{tag}/PAIR-INDEX.json) — download only selected direction and its two languages using verified byte ranges.\n- [Normalized group inventory](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all sources; compact corpus/graph subsets).
 - [Source refresh report](https://github.com/{REPO}/releases/download/{tag}/REFRESH-REPORT.json) (exact changed assets and retained sources).
 - Preserve original licenses and source-specific attribution. Third-party data are not covered by the project MIT license.
 """

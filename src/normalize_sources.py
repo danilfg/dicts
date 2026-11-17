@@ -20,6 +20,7 @@ from build_pages import normalize,bucket,write_gzip
 from build_pages_lexical import wordnet_records,uri_concept,RELATIONS
 from normalized_pack import pull,pack,write_json
 from unified_release import inventory,upload
+from pair_pack import pack_application,LAYOUT
 from download_pages_inputs import choose
 
 LANGS={"eng":"en","rus":"ru","spa":"es","deu":"de","fra":"fr","ita":"it","por":"pt","jpn":"ja","cmn":"zh","zho":"zh","arb":"ar","ara":"ar","fin":"fi","ces":"cs","nld":"nl","pol":"pl","ell":"el","heb":"he","ind":"id","swe":"sv","dan":"da","nor":"no","nob":"nb","nno":"nn","ukr":"uk","tur":"tr","ron":"ro","bul":"bg","lit":"lt","lav":"lv","hrv":"hr","slv":"sl","slk":"sk","hun":"hu","hin":"hi","kor":"ko","cat":"ca","eus":"eu","glg":"gl","isl":"is","tha":"th","msa":"ms","zsm":"ms","sqi":"sq","vie":"vi","fas":"fa","ben":"bn","srp":"sr"}
@@ -235,7 +236,7 @@ def run(tag,group,work,previous=""):
     result=[]
     if previous:
         prior=inventory(previous)
-        if "LEXICAL-INDEX.json" in prior:
+        if "PAIR-INDEX.json" in prior:
             pull(tag,["REFRESH-REPORT.json"],folder,assets)
             report=json.loads((folder/"REFRESH-REPORT.json").read_text())
             relevant={"bilingual":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages-lexical":("oewn","omw","conceptnet")}.get(group,(group,))
@@ -283,7 +284,9 @@ def run(tag,group,work,previous=""):
     if group not in ("bilingual","pages","pages-lexical"):
         if not result or any(not row for row in result):raise ValueError("No normalized data for "+group)
         write_json(root/"data"/"lexical"/group/"catalog.json",{"schema":1,"source":group,"languages":result,"release":tag,"notice":"Compact lookup; original source archives and licenses remain authoritative."})
-    out=work/"packs";pack(root,group,out)
+    out=work/"packs"
+    if group in ("pages","pages-lexical"):pack(root,group,out)
+    else:pack_application(root,group,out)
     upload(tag,sorted(out.iterdir()))
 
 if __name__=="__main__":

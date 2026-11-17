@@ -23,14 +23,14 @@ class NormalizedReleaseTests(unittest.TestCase):
             with self.subTest(source=source):
                 updated="wikdict" if source!="wikdict" else "freedict"
                 name=updated+"--en-ru.zip"
-                old={name:{"digest":"sha256:old"},"LEXICAL-INDEX.json":{}}
+                old={name:{"digest":"sha256:old"},"PAIR-INDEX.json":{}}
                 new={name:{"digest":"sha256:new"}}
                 report=plan(old,new,[name],{source:{"source":source,"retained":True,"reason":"unavailable","previous_release":"v1"}},"v2","v1")
                 self.assertTrue(report["publish"])
                 self.assertEqual(report["sources"][source]["status"],"retained")
                 self.assertEqual(report["sources"][updated]["status"],"updated")
     def test_no_changes_no_release_after_bootstrap(self):
-        self.assertFalse(plan({"LEXICAL-INDEX.json":{}},{},[],{},"v2","v1")["publish"])
+        self.assertFalse(plan({"PAIR-INDEX.json":{}},{},[],{},"v2","v1")["publish"])
         self.assertTrue(plan({}, {}, [], {}, "v2","v1")["publish"])
     def test_source_isolation(self):
         self.assertTrue(belongs("lexicon--oewn-en.json.gz","oewn"))

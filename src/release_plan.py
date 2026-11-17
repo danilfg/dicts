@@ -22,7 +22,7 @@ def plan(old,new,changed,retained,version,previous):
     for s,row in families.items():
         modifies=any(row[k] for k in ("added","updated","removed"))
         row["status"]="updated_with_stale_data" if modifies and row["retained"] else "updated" if modifies else "retained" if row["retained"] else "unchanged"
-    bootstrap="LEXICAL-INDEX.json" not in old
+    bootstrap="PAIR-INDEX.json" not in old
     return {"schema":1,"version":version,"previous_release":previous,"publish":bool(changed or bootstrap),
             "normalization_bootstrap":bootstrap,"sources":families}
 
@@ -43,7 +43,7 @@ def release_notes(report):
                 state="kept previous verified file" if item["retained"] else "new file unavailable; no prior copy"
                 lines.append(f"- `{item['file']}`: {state}; {reason}")
             if len(row["retained"])>12:lines.append("- Further retained/unavailable files: see REFRESH-REPORT.json.")
-    if report["normalization_bootstrap"]:lines+=["","First release with normalized application packages."]
+    if report["normalization_bootstrap"]:lines+=["","First release with pair-selective normalized application packages."]
     lines+=["","Changes describe source files, not invented per-entry linguistic diffs. Original licenses remain in force.",""]
     return "\n".join(lines)
 
