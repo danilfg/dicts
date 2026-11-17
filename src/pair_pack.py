@@ -65,7 +65,7 @@ def mini_zips(root,files,out,stem):
         dest=out/name;dest.parent.mkdir(parents=True,exist_ok=True)
         with zipfile.ZipFile(dest,"w",compression=zipfile.ZIP_STORED,allowZip64=False) as z:
             for path in batch:
-                info=zipfile.ZipInfo(path.relative_to(root).as_posix(),date_time=(1980,1,1,0,0))
+                info=zipfile.ZipInfo(path.relative_to(root).as_posix(),date_time=(1980,1,1,0,0,0))
                 info.compress_type=zipfile.ZIP_STORED
                 # Each shard is bounded; inner ZIPs use standard ZIP32.
                 z.writestr(info,path.read_bytes())
