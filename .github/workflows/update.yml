@@ -5,6 +5,12 @@ on:
     paths:
       - .github/workflows/update.yml
       - src/unified_release.py
+      - src/release_changes.py
+      - src/build.py
+      - src/mirror_raw.py
+      - src/sync_lexical.py
+      - configs/sources.json
+      - tests/test_release_changes.py
   workflow_dispatch:
     inputs:
       mode:
@@ -14,7 +20,7 @@ on:
         options: [all, consolidate]
         default: all
   schedule:
-    - cron: '0 4 1 * *'
+    - cron: '17 4 * * *'
 permissions:
   contents: write
 concurrency:
@@ -197,7 +203,7 @@ jobs:
     needs: [prepare, migrate, build-and-release, raw-text-corpora, lexical-resources]
     if: always() && needs.prepare.result == 'success' && ((needs.prepare.outputs.mode == 'consolidate' && needs.migrate.result == 'success') || (needs.prepare.outputs.mode == 'all' && needs.build-and-release.result == 'success' && needs.raw-text-corpora.result == 'success' && needs.lexical-resources.result == 'success'))
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.prepare.outputs.tag }}

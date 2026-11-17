@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-interface-deployment
+  group: deploy-dictionary-pages
   cancel-in-progress: true
 
 jobs:

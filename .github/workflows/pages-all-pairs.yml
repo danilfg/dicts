@@ -15,7 +15,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-all-pairs
+  group: deploy-dictionary-pages
   cancel-in-progress: true
 
 jobs:
@@ -33,8 +33,6 @@ jobs:
           python -m unittest discover -s tests -v
           node --check site/app.js
           node --test tests/test_entry_format.cjs
-      - name: Reuse the published bilingual and optional semantic indexes
-        run: python src/refresh_pages_data.py --site-dir site
       - name: Download all KOReader pairs and all compact enrichment pairs from our Releases
         run: python src/download_pages_inputs.py --dir downloads
       - name: Produce searchable language-pair catalog and all compact data
@@ -60,6 +58,43 @@ jobs:
           missing=sorted(published_pairs-indexed_pairs)
           if missing:raise AssertionError("Unsearchable published directions: "+repr(missing[:30]))
           print("ALL LANGUAGE DIRECTIONS VERIFIED:",len(indexed_pairs),flush=True)
+          PY
+      - name: Download published licensed lexical data without GitHub REST API
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lexical-input
+          get() {
+            local name="$1"
+            echo "Downloading $name from latest unified release"
+            curl --fail --location --retry 4 --retry-all-errors --retry-delay 5 \
+              --connect-timeout 40 --max-time 1800 \
+              --output "lexical-input/$name" \
+              "https://github.com/danilfg/dicts/releases/latest/download/$name"
+            test -s "lexical-input/$name"
+          }
+          get lexicon--oewn-en.json.gz
+          get omw--omw-en-2.0.tar.xz
+          get omw--omw-es-2.0.tar.xz
+          get conceptnet--assertions-5.7.0.csv.gz
+      - name: Generate source-attributed WordNet and ConceptNet index
+        shell: bash
+        run: |
+          python src/build_pages_lexical.py \
+            --oewn lexical-input/lexicon--oewn-en.json.gz \
+            --omw en=lexical-input/omw--omw-en-2.0.tar.xz \
+            --omw es=lexical-input/omw--omw-es-2.0.tar.xz \
+            --conceptnet lexical-input/conceptnet--assertions-5.7.0.csv.gz \
+            --site-dir site
+          python - <<'PY'
+          import json, pathlib
+          c=json.loads(pathlib.Path("site/data/lexical/catalog.json").read_text())
+          assert c["sources"]["oewn"]["languages"], "OEWN unavailable"
+          assert c["sources"]["conceptnet"]["languages"], "ConceptNet unavailable"
+          assert c["sources"]["omw"]["languages"], "OMW unavailable"
+          size=sum(x.stat().st_size for x in pathlib.Path("site").rglob("*") if x.is_file())
+          assert size<945_000_000, f"Pages site too large: {size}"
+          print("Lexical Pages index ready, bytes",size)
           PY
       - uses: actions/upload-pages-artifact@v3
         with:

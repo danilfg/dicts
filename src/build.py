@@ -155,13 +155,17 @@ def merge(pair,glossary,source):
 
 def package_zip(path,files,license_text,notice,source_archive=None):
     with zipfile.ZipFile(path,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
-        for name,payload in files.items():
+        def write(name, payload):
+            info=zipfile.ZipInfo(name,date_time=(1980,1,1,0,0,0))
+            info.compress_type=zipfile.ZIP_DEFLATED
+            z.writestr(info,payload,compresslevel=6)
+        for name,payload in sorted(files.items()):
             if ".." in Path(name).parts:raise ValueError("Invalid archive member")
-            z.writestr(Path(name).name,payload)
-        z.writestr("LICENSE-SOURCE.txt",license_text)
-        z.writestr("ATTRIBUTION.txt",notice)
+            write(Path(name).name,payload)
+        write("LICENSE-SOURCE.txt",license_text)
+        write("ATTRIBUTION.txt",notice)
         if source_archive is not None:
-            z.writestr("ORIGINAL-SOURCE.tar.xz",source_archive)
+            write("ORIGINAL-SOURCE.tar.xz",source_archive)
     zip_members(path)
 
 def build_freedict(out):

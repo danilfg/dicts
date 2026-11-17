@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+from release_changes import diff_plan, confirm_zip_changes
 from pathlib import Path
 REPO="danilfg/dicts"
 OLD={"main":"data-20261116-093517","kaikki":"raw-kaikki-20261116-090335",
@@ -30,10 +31,8 @@ def inventory(tag):
     rel=release(tag)
     # The release response includes the assets; use pagination if the
     # response looks capped, and always validate completeness afterwards.
-    rows=rel.get("assets",[])
-    if len(rows) in (30,100) or not rows:
-        pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{rel['id']}/assets?per_page=100"))
-        rows=[a for page in pages for a in page]
+    pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{rel['id']}/assets?per_page=100"))
+    rows=[a for page in pages for a in page]
     assert len({a["name"] for a in rows})==len(rows)
     return {a["name"]:a for a in rows}
 def digest(a):
@@ -126,6 +125,16 @@ def finalize(tag):
     assets=inventory(tag)
     with tempfile.TemporaryDirectory() as tmp:
         folder=Path(tmp);groups=validate(tag,assets,folder)
+        previous=json.loads(gh("api",f"repos/{REPO}/releases/latest"))
+        if previous["tag_name"].startswith("v"):
+            changed,repacked=diff_plan(inventory(previous["tag_name"]),assets)
+            if not changed:
+                changed=confirm_zip_changes(previous["tag_name"],tag,repacked,REPO)
+            if not changed:
+                print("UNCHANGED: all eight source families match "+previous["tag_name"],flush=True)
+                gh("release","delete",tag,"-R",REPO,"--yes")
+                return
+            print("UPSTREAM CHANGES:", ", ".join(changed[:30]),flush=True)
         entries=[{"name":n,"bytes":assets[n]["size"],"sha256":digest(assets[n])} for n in sorted(assets)]
         if len(entries)+2>1000:raise ValueError("Asset limit exceeded")
         master=folder/"RELEASE-MANIFEST.json"

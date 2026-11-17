@@ -35,7 +35,7 @@ jobs:
           set -euo pipefail
           mkdir -p downloads
           tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
-          if [[ "$tag" != data-* ]]; then
+          if [[ "$tag" != v* ]]; then
             echo "::error::Expected main data release, got: $tag"
             exit 1
           fi
