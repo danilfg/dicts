@@ -20,11 +20,20 @@ LEX=("LEXICAL-MANIFEST.json","THIRD-PARTY-LEXICAL-NOTICES.md")
 def gh(*args):
     return subprocess.check_output(["gh",*args],text=True).strip()
 def release(tag):
+    # A draft can exist before its git tag does; the authenticated release
+    # list includes drafts, unlike the published-release-by-tag endpoint.
+    if tag.startswith("v"):
+        pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases?per_page=100"))
+        return next(r for page in pages for r in page if r["tag_name"]==tag)
     return json.loads(gh("api",f"repos/{REPO}/releases/tags/{tag}"))
 def inventory(tag):
     rel=release(tag)
-    pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{rel['id']}/assets?per_page=100"))
-    rows=[a for page in pages for a in page]
+    # The release response includes the assets; use pagination if the
+    # response looks capped, and always validate completeness afterwards.
+    rows=rel.get("assets",[])
+    if len(rows) in (30,100) or not rows:
+        pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{rel['id']}/assets?per_page=100"))
+        rows=[a for page in pages for a in page]
     assert len({a["name"] for a in rows})==len(rows)
     return {a["name"]:a for a in rows}
 def digest(a):
@@ -57,13 +66,13 @@ def migrate(tag,source,part,parts):
     old=inventory(OLD[source])
     names=sorted(n for n in old if n!="SHA256SUMS.txt")[part::parts]
     if not names:raise ValueError("Empty source")
-    for i in range(0,len(names),12):
+    for i in range(0,len(names),250):
         with tempfile.TemporaryDirectory() as tmp:
             def fetch(n):return download(old[n],Path(tmp)/rename(source,n))
             with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-                files=list(pool.map(fetch,names[i:i+12]))
+                files=list(pool.map(fetch,names[i:i+250]))
             upload(tag,files)
-        print(source,part,min(i+12,len(names)),len(names),flush=True)
+        print(source,part,min(i+250,len(names)),len(names),flush=True)
 def validate(tag,assets,folder):
     def check(name,expected=None,size=None):
         a=assets[name]; h=digest(a)
