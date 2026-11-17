@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 concurrency:
@@ -26,6 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
       - name: Validate and extract already normalized Pages data
         run: |
           set -euo pipefail

@@ -8,6 +8,7 @@ on:
     - cron: '17 4 1 * *'
 permissions:
   contents: write
+  packages: write
   pages: write
   id-token: write
 concurrency:
@@ -27,11 +28,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
       - name: Test all source parsers and release policies
         run: |
           python -m compileall -q src tests
           python -m unittest discover -s tests -v
           node --test tests/test_entry_format.cjs
+      - name: Check anonymous access (initialize package if needed)
+        run: python src/storage.py probe
       - id: setup
         shell: bash
         run: |
@@ -57,6 +64,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
       - name: Check and download KOReader archives
         id: ko
         continue-on-error: true
@@ -70,7 +81,7 @@ jobs:
           python src/build.py --upstream upstream --out dist --mode all
           python src/package_release.py --dist dist
           rm -f dist/SHA256SUMS.txt
-          gh release upload "$UNIFIED_RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY"
+          python src/storage.py upload --tag "$UNIFIED_RELEASE_TAG" dist/*
 
   refresh:
     needs: prepare
@@ -89,6 +100,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
       - name: Refresh source or retain the last verified copy
         run: python src/stage_source.py --tag "$UNIFIED_RELEASE_TAG" --previous "$PREVIOUS_RELEASE_TAG" --source ${{ matrix.source }}
 
@@ -107,6 +122,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
       - id: detect
         run: python src/release_plan.py --tag "$TAG" --previous "$PREVIOUS"
 
@@ -128,6 +147,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
       - name: Build or reuse verified normalized JSON shards
         run: python src/normalize_sources.py --tag "$TAG" --previous "$PREVIOUS" --group ${{ matrix.group }}
 
@@ -144,6 +167,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
+      - name: Publish source licensing metadata
+        run: python src/storage.py upload --tag "$TAG" legal/SOURCES.json legal/NOTICE.md LICENSE
       - run: python src/unified_release.py finalize --tag "$TAG"
 
   pages:
@@ -153,6 +182,7 @@ jobs:
       tag: ${{ needs.prepare.outputs.tag }}
     permissions:
       contents: read
+      packages: read
       pages: write
       id-token: write
 
