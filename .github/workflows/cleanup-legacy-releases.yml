@@ -1,6 +1,9 @@
 name: Clean up legacy releases
 
 on:
+  push:
+    branches: [main]
+    paths: [.github/cleanup-legacy-request]
   workflow_dispatch:
     inputs:
       mode:
@@ -24,7 +27,7 @@ jobs:
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
-      CLEANUP_MODE: ${{ inputs.mode }}
+      CLEANUP_MODE: ${{ github.event_name == 'push' && 'delete' || inputs.mode }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
