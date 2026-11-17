@@ -2,6 +2,7 @@
 import hashlib
 import json
 import re
+import urllib.error
 import urllib.parse
 import urllib.request
 from functools import lru_cache
@@ -31,9 +32,14 @@ def public_blob(registry,block):
     if registry!=REGISTRY or not re.fullmatch(r"[0-9a-f]{64}",block["sha256"]) or not 0<block["bytes"]<=MAX_BLOCK:
         raise ValueError("Invalid OCI descriptor")
     url="https://ghcr.io/v2/danilfg/dicts-data/blobs/sha256:"+block["sha256"]
-    req=urllib.request.Request(url,headers={"Authorization":"Bearer "+anonymous_token()})
-    with OPENER.open(req,timeout=180) as r:
-        data=r.read(block["bytes"]+1)
+    for attempt in range(2):
+        req=urllib.request.Request(url,headers={"Authorization":"Bearer "+anonymous_token()})
+        try:
+            with OPENER.open(req,timeout=180) as r:data=r.read(block["bytes"]+1)
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code!=401 or attempt:raise
+            anonymous_token.cache_clear()
     if len(data)!=block["bytes"] or hashlib.sha256(data).hexdigest()!=block["sha256"]:
         raise ValueError("OCI blob integrity mismatch")
     return data

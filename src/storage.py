@@ -37,7 +37,8 @@ def scope_of(name):
     return "main"
 
 def is_control(name):
-    return (name in {"LEXICAL-INDEX.json","PAIR-INDEX.json","REFRESH-REPORT.json","RELEASE-MANIFEST.json","SHA256SUMS.txt","SOURCES.json","NOTICE.md","LICENSE"}
+    return (name in {"LEXICAL-INDEX.json","PAIR-INDEX.json","REFRESH-REPORT.json","RELEASE-MANIFEST.json","SHA256SUMS.txt","SOURCES.json","NOTICE.md","LICENSE","manifest.json","BUNDLE-PARTS.json","THIRD-PARTY-NOTICES.md"}
+        or name.endswith(("--SOURCE-MANIFEST.json","--ATTRIBUTION-AND-LICENSE.txt","--LEXICAL-MANIFEST.json","--THIRD-PARTY-LEXICAL-NOTICES.md","--PER-PACKAGE-LICENSES.json"))
         or name.startswith("retained--") or name.startswith("normalized--") and name.endswith("-index.json"))
 
 def record_ok(row):

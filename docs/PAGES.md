@@ -22,7 +22,7 @@ translations with a language model.
 
 **Semantic relations are not literal bilingual translations.** Full raw
 Kaikki/Tatoeba corpora and complete original WordNet/ConceptNet archives
-are independently named assets in unified versions in [GitHub Releases](https://github.com/danilfg/dicts/releases).
+are independently named OCI files listed by unified versions in [GitHub Releases](https://github.com/danilfg/dicts/releases).
 The bounded WordNet/ConceptNet Pages lookup data must not be described as
 the entire original graph.
 
@@ -34,7 +34,7 @@ The published `data/catalog.json` is authoritative: language options appear
 only for pairs whose searchable data are actually published.
 
 The [all-language-pairs workflow](../.github/workflows/pages-all-pairs.yml)
-has successfully deployed **753 searchable language directions** using approximately **932.5 MB** of page assets. It downloads the main dictionaries from **this repository's Releases**, verifies
+has successfully deployed **753 searchable language directions** using approximately **932.5 MB** of page assets. It downloads the main dictionaries from **this repository's versioned OCI inventory (or legacy release assets)**, verifies
 source checksums, and attempts to index every published language direction.
 To meet GitHub Pages' **1 GB** limit, the builder prefers compact
 FreeDict/WikDict indexes where available, while keeping complete KOReader
@@ -43,7 +43,7 @@ full entries for six core English/Russian/Spanish/German directions.
 
 This choice conserves space without dropping entire language directions.
 **It does not mean that every original source's entire dictionary is indexed
-on Pages.** Full original source ZIP files remain downloadable and source
+on Pages.** Full original source ZIP files remain downloadable through the release inventory and source
 attribution is preserved for the entries actually displayed. The workflow
 fails if a published language direction is missing or the site exceeds the
 limit; a successful run is required before claiming expanded live coverage.

@@ -37,3 +37,7 @@ This disclaimer **does not** waive mandatory consumer/statutory rights or remove
 This document is a good-faith rights disclosure, **not an attorney's legal opinion or a replacement for the original licenses**.
 
 Unified dated versions additionally include `RELEASE-MANIFEST.json`, release-wide `SHA256SUMS.txt`, and source-prefixed raw/lexical manifests and notices. This packaging change does not merge or replace individual data licenses.
+
+## OCI distribution and normalized application units
+
+The OCI registry `ghcr.io/danilfg/dicts-data` is a data transport, not a new work or a new license. Dated release inventories map every original and modified file to its SHA-256 and storage location. Pair and language units preserve provider identities, applicable record-level provenance and per-component license evidence; the release's source manifests, notices and raw source archives remain authoritative. Download and retain applicable notices and corresponding sources when redistributing. No blanket license applies to mixed data. Do not delete registry manifests referenced by published releases.

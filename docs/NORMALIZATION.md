@@ -2,7 +2,7 @@
 
 The [monthly update workflow](../.github/workflows/update.yml) builds application-ready lookup data and publishes it with the original source archives. Applications do not need a StarDict, WN-LMF or ConceptNet parser.
 
-**Availability:** the new format is usable after the first successful release containing [LEXICAL-INDEX.json](https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json). Older releases do not have this index. The examples on this page are synthetic schema illustrations, not verified upstream translations, corpus records, identifiers or author names.
+**Availability:** the new format is usable after the first successful release containing `format: oci-pair-v1` in [LEXICAL-INDEX.json](https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json). Older releases may contain legacy indexes; reject unsupported formats. The examples on this page are synthetic schema illustrations, not verified upstream translations, corpus records, identifiers or author names.
 
 ## Normalization pipeline
 
@@ -10,7 +10,7 @@ The [monthly update workflow](../.github/workflows/update.yml) builds applicatio
 2. Reuse verified previous files when an upstream is unreachable; report failures in release notes and `REFRESH-REPORT.json`.
 3. Compare source contents, including ZIP members, ignoring packaging timestamps. After the first format upgrade, unchanged sources alone do not trigger a release.
 4. Parse original files, preserve source attribution and separate bilingual articles, definitions, examples and semantic relations.
-5. Write UTF-8 JSON shards compressed with gzip. Group shards into ZIP assets, each below 1.4 GB, and record SHA-256 and sizes.
+5. Write UTF-8 JSON shards compressed with gzip. Split cross-language relationships by target, build ZIP blocks of at most 32 MiB for directions or individual languages, then publish independent OCI blobs with SHA-256 and sizes.
 6. Verify source and normalized inventories; publish a dated immutable version. Deploy the prepared compact Pages indexes.
 
 Implementation: [bilingual conversion](../src/build_pages.py), [lexical/corpus conversion](../src/normalize_sources.py), [packaging](../src/normalized_pack.py), [release comparison](../src/release_plan.py), [validation](../src/unified_release.py).
@@ -32,89 +32,83 @@ The `pages` and `pages-lexical` groups are separate compact website indexes. The
 
 Bilingual articles retain readable text (including semicolons and line breaks) but are not guaranteed to be structured into individual senses, grammar, pronunciation or idioms. Do not split article strings indiscriminately. Original markup and fields not parsed remain in the original source archives. WordNet/ConceptNet records must not be rendered as literal translations.
 
-## Release layout
+## Release and registry protocol
 
-```text
-LEXICAL-INDEX.json
-REFRESH-REPORT.json
-RELEASE-MANIFEST.json
-SHA256SUMS.txt
-normalized--bilingual-index.json
-normalized--bilingual-001.zip
-normalized--bilingual-002.zip      # if needed
-normalized--oewn-index.json
-normalized--oewn-001.zip
-normalized--omw-index.json
-normalized--omw-001.zip
-normalized--conceptnet-index.json
-normalized--conceptnet-001.zip
-normalized--kaikki-index.json
-normalized--kaikki-001.zip
-normalized--tatoeba-index.json
-normalized--tatoeba-001.zip
-normalized--pages-index.json
-normalized--pages-lexical-index.json
-... other packages and original source assets
-```
+Release metadata is immutable after publication. Data files are stored in **`ghcr.io/danilfg/dicts-data`**. A package is OCI data (not a Docker image to run). A logical file is an OCI layer; OCI manifests retain the layer references. Release receipts (`oci--*.json`) list the files, manifest digests and content hashes. Original source files and convenience bundles use the same transport. Do not delete package versions referenced by any release.
 
-Names and part counts are illustrative: always discover actual pack names from the indexes.
+### Step 1 — discover and pin
 
-The master index has `schema` (integer 1), `version` (release tag), `format` (`gzip-json-shards`), `download_base` (the **pinned release** URL ending in a slash) and `groups` (object keyed by group). Each group descriptor contains `index`, `bytes` and `sha256`.
-
-Each group index has this shape (values such as sizes and hashes are illustrative placeholders):
+Fetch `https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json`. Require schema 1, format `oci-pair-v1`, expected registry and pinned download base. Example (synthetic digest and byte count):
 
 ```json
 {
   "schema": 1,
-  "group": "bilingual",
-  "packages": [
-    {
-      "name": "normalized--bilingual-001.zip",
-      "bytes": 123456,
-      "sha256": "<64 lowercase hex characters>"
-    }
-  ],
-  "members": {
-    "data/catalog.json": {
-      "pack": "normalized--bilingual-001.zip",
-      "bytes": 1234,
-      "sha256": "<64 lowercase hex characters>"
+  "version": "v2026.12.01.24.1",
+  "format": "oci-pair-v1",
+  "registry": "ghcr.io/danilfg/dicts-data",
+  "download_base": "https://github.com/danilfg/dicts/releases/download/v2026.12.01.24.1/",
+  "pair_index": {"name":"PAIR-INDEX.json","bytes":123456,"sha256":"<64 hex characters>"},
+  "groups": {}
+}
+```
+
+Fetch the pair index from the pinned release, verify exact bytes/SHA-256, and require the same version, registry and format.
+
+### Step 2 — select all applicable groups
+
+```json
+{
+  "schema":1,
+  "format":"oci-pair-v1",
+  "registry":"ghcr.io/danilfg/dicts-data",
+  "version":"v2026.12.01.24.1",
+  "download_base":"https://github.com/danilfg/dicts/releases/download/v2026.12.01.24.1/",
+  "pairs":{"en-ru":{"from":"en","to":"ru","sources":["koreader","freedict","wikdict"]}},
+  "groups":{
+    "bilingual":{
+      "pairs":{"en-ru":[{"bytes":123456,"sha256":"<64 hex characters>","manifest":"sha256:<64 hex characters>"}]},
+      "languages":{}
     },
-    "data/en-ru/00.json.gz": {
-      "pack": "normalized--bilingual-001.zip",
-      "bytes": 5678,
-      "sha256": "<64 lowercase hex characters>"
+    "oewn":{
+      "pairs":{},
+      "languages":{"en":[{"bytes":123456,"sha256":"<64 hex characters>","manifest":"sha256:<64 hex characters>"}]}
     }
   }
 }
 ```
 
-SHA-256 values are calculated over the exact file bytes, including compressed
-bytes for GZIP members. Download a group index from the pinned release URL,
-verify its hash and size from the master index, then verify ZIPs and members.
-A member may be in any listed ZIP. Do not assume that one ZIP contains an entire language.
+The example intentionally omits other groups. Select `groups[*].pairs[PAIR]` and `groups[*].languages[FROM]` / `[TO]` when present. Iterate **all** groups, deduplicate blocks by SHA-256, and do not download unrelated directions. `pairs[*].sources` identifies translation sources; semantic/example groups are discovered independently. Match the requested direction exactly (EN–RU and RU–EN are independent). Codes in this version are lowercase alphanumeric language identifiers of 2–20 characters, not arbitrary compound BCP47 tags.
 
-### Catalogs and shard selection
+### Step 3 — anonymous HTTP downloads
 
-- `bilingual` / `pages`: `data/catalog.json` lists `pairs` with fields
-  `pair`, `from`, `to`, `entries`, `sources`, `buckets`, `compressed_bytes`.
-  `provenance[pair][source]` carries download/source URLs, license and attribution.
-  Shards: `data/PAIR/NN.json.gz`.
-- `oewn`, `omw`, `conceptnet`, `kaikki`, `tatoeba`:
-  `data/lexical/GROUP/catalog.json` lists `languages`. Each descriptor includes
-  `language`, `package` (string or null), `path`, `entries`, `buckets`.
-  OMW also has `rights` with the per-package license and citation. A language
-  may have several descriptors (OMW lexicons or Kaikki editions). Use every
-  desired descriptor, not just the first. Shards: `PATH/NN.json.gz`.
-- `pages-lexical`: `data/lexical/catalog.json` with `sources` keyed by
-  `oewn`, `omw`, `conceptnet`; each source has `languages` descriptors
-  and metadata. This legacy website view has a different ConceptNet entry
-  shape (an array of relations rather than an object). Application clients
-  should prefer the full source groups.
+```text
+GET https://ghcr.io/token?service=ghcr.io&scope=repository%3Adanilfg%2Fdicts-data%3Apull
+GET https://ghcr.io/v2/danilfg/dicts-data/blobs/sha256:<64 hex characters>
+Authorization: Bearer <anonymous pull token>
+```
 
-Language codes come from the catalogs. Some two- and three-letter codes
-coexist; do not assume all codes are ISO 639-1 or collapse distinct languages
-without consulting the data. `en-ru` and `ru-en` are independent directions.
+Allow HTTPS redirects, but do not forward Authorization to a different host. Verify size and SHA-256 before caching. A public package requires no account or personal credentials. Refresh the anonymous pull token on expiry. Do not download the entire OCI manifest's other layers. For CLI consumers use `oras blob fetch ghcr.io/danilfg/dicts-data@sha256:DIGEST --output FILE`.
+
+### Step 4 — unit layout and lookup
+
+Each independently downloadable ZIP is one block (at most 32 MiB). Combine the member directory of every block of a given group/scope/id. Exactly one block has `UNIT.json`; verify its identity. ZIPs use ZIP_STORED; the data members are GZIP-compressed UTF-8 JSON. Unit examples:
+
+```json
+{"schema":1,"group":"bilingual","scope":"pairs","id":"en-ru","kind":"bilingual",
+ "descriptor":{"pair":"en-ru","from":"en","to":"ru","buckets":16,"entries":123,"sources":[]},"provenance":{}}
+```
+
+```json
+{"schema":1,"group":"omw","scope":"languages","id":"es","kind":"lexical",
+ "descriptors":[{"language":"es","package":"omw-es-2.0","path":"data/lexical/omw/es/omw-es-2.0","entries":100,"buckets":4,"rights":{"license":"<actual component license>","citation":"<actual citation>"}}]}
+```
+
+```json
+{"schema":1,"group":"kaikki","scope":"pairs","id":"en-ru","kind":"links",
+ "path":"data/links/kaikki/en-ru","buckets":32}
+```
+
+Bilingual data files: `data/PAIR/NN.json.gz`. Lexical data files: `descriptor.path/NN.json.gz` for each descriptor (every edition/lexicon). Linked data files: `UNIT.path/NN.json.gz`; their `words[KEY]` contains a list of `{"package": "...", "record": {...}}` objects. The record preserves the corresponding cross-language field (`translations`, `relations`, or `examples`) filtered to the selected target language. Language-local units contain same-language material only. Preserve records and provenance, even for newly registered groups. Clients can install unknown groups following the same protocol; unfamiliar record kinds require a rendering adapter.
 
 The exact shard algorithm is [in the builder](../src/build_pages.py):
 normalize the query using Python Unicode `casefold()`, strip and collapse
@@ -139,7 +133,7 @@ in this format.
 ## Record examples
 
 All examples show the **decompressed** JSON. The values are synthetic.
-Each shard normally contains many words.
+Each shard normally contains many words. Kaikki, Tatoeba and ConceptNet examples below illustrate pre-split record fields; cross-language values are placed in the exact-direction link units. For instance, a Kaikki EN–RU links record contains only Russian targets, not Spanish.
 
 ### KOReader, FreeDict and WikDict — bilingual
 
@@ -280,7 +274,7 @@ relations. Preserve OEWN and Princeton WordNet attribution.
 Original synset IDs and ILI are kept where available. `ili` and `pos` can
 be null. Same ILI across languages indicates a shared lexical concept,
 not guaranteed literal translation. Schema 1 does not yet provide a
-global reverse ILI index. Use per-package rights in the OMW catalog.
+global reverse ILI index. Use per-package rights in the unit descriptor.
 
 ### ConceptNet
 
@@ -310,44 +304,24 @@ global reverse ILI index. Use per-package rights in the OMW catalog.
 Relations include selected types such as Synonym, Antonym, RelatedTo, IsA,
 PartOf and UsedFor. Only selected edges with source license metadata are
 included: up to 100,000 terms per language and 12 relations per term.
-The target language may differ from the source language. `dataset` may
+Cross-language edges are transported in the directional link units rather than the language-local unit. `dataset` may
 be null. Do not present semantic edges as literal translations.
 
-## Using the data in your application
+## Reference clients
 
-The reference client [examples/lookup.py](../examples/lookup.py) uses only the
-Python standard library. It downloads the master index once, pins the
-release URL, verifies the group index/required ZIPs/selected members and
-prints matching records. Downloads are cached under a version-specific
-directory. The first download can be large because even one word may require
-a grouped ZIP. Subsequent lookups work from the local cached ZIPs.
+- [Python 3.10+](../examples/lookup.py): list, install and search all available groups; pair-specific SHA-256 caching with the standard library.
+- [Java 17 + Maven](../examples/java/pom.xml): installation from the same catalog, no Docker daemon.
+- [Chrome MV3](../examples/browser/oci-client.mjs): anonymous fetch, pair selection and verified download to an IndexedDB-compatible cache interface. The extension supplies storage and ZIP/JSON readers.
 
 ```bash
+python examples/lookup.py --list
+python examples/lookup.py --pair en-ru --install
 python examples/lookup.py car --pair en-ru
-python examples/lookup.py car --group oewn --language en
-python examples/lookup.py coche --group omw --language es
-python examples/lookup.py car --group conceptnet --language en
-python examples/lookup.py car --group kaikki --language en
-python examples/lookup.py car --group tatoeba --language en
+mvn -f examples/java/pom.xml compile exec:java -Dexec.mainClass=DictsPair -Dexec.args="en-ru"
 ```
 
-Pin a release explicitly using `--version TAG` rather than mixing resources
-from `latest` on every HTTP request. The client performs network access on
-its first invocation (unless all required assets are already cached and a
-version is pinned). See [the client source](../examples/lookup.py) for
-the download, cache and member-verification implementation.
+Cache by content digest, not file name or release. Use a pinned version for repeatable installation; Python can search a pinned fully cached pair offline. Unknown optional fields must not be discarded when redistributing data. If a future provider introduces a new record kind, update only its rendering adapter. The catalog, rather than hardcoded groups, is the download contract.
 
-A browser extension may instead import the required ZIPs once, decompress
-only needed shards and cache them in IndexedDB. Do not require users to
-download full raw corpora to search a word.
+## Rights and compatibility
 
-### Compatibility and licensing
-
-- Check `schema` before reading data. Ignore unknown optional fields; use the
-  authoritative catalog and manifests, not hardcoded lists.
-- Keep entire source records and individual licenses. Do not silently combine
-  separately licensed databases into a new license.
-- Read [source licensing and notices](../legal/NOTICE.md) and original source
-  archives. The project MIT license applies to code, not all redistributed data.
-- Read `REFRESH-REPORT.json` for availability and changes since the previous
-  release. A retained source may be older than the release tag.
+See [source licensing and notices](../legal/NOTICE.md) and the release's `SOURCES.json`, `NOTICE.md`, `THIRD-PARTY-NOTICES.md`, component manifests and original archives. The code's MIT license is separate from dictionary content. Sources remain independently attributed and original obligations apply. The report `REFRESH-REPORT.json` identifies retained older data. This protocol is not compatible with older whole-group release ZIP indexes; use the correct versioned reader.

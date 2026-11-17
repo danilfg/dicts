@@ -57,7 +57,7 @@ def split_record(group,language,entry):
     return original,records
 
 def mini_zips(root,files,out,stem):
-    """Create bounded, deterministic ordinary standalone ZIPs for Range reads."""
+    """Create bounded, deterministic ordinary standalone ZIPs for individual OCI blob downloads."""
     blocks=[]; batch=[]; total=0
     def flush():
         if not batch:return

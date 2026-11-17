@@ -2,7 +2,7 @@
 
 **One independent GitHub collection of offline bilingual dictionaries, definitions, WordNets, example sentences and semantic knowledge.**
 
-Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates third-party data with source and licensing information, checks published files and offers them through [GitHub Releases](https://github.com/danilfg/dicts/releases). The verified main collection includes **806 bilingual dictionary archives**: 74 KOReader, 305 FreeDict and 427 WikDict. These are **package counts, not unique language-pair counts**. Additionally, ConceptNet's upstream semantic graph covers 304 languages with very different levels of vocabulary coverage; that does **not** mean there are 304 complete translation dictionaries.
+Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates third-party data with source and licensing information, checks published files and offers versioned catalogs through [GitHub Releases](https://github.com/danilfg/dicts/releases). The verified main collection includes **806 bilingual dictionary archives**: 74 KOReader, 305 FreeDict and 427 WikDict. These are **package counts, not unique language-pair counts**. Additionally, ConceptNet's upstream semantic graph covers 304 languages with very different levels of vocabulary coverage; that does **not** mean there are 304 complete translation dictionaries.
 
 **[🌐 Try the live online dictionary →](https://danilfg.github.io/dicts/)** — search words and compare translations, definitions and examples directly in your browser.
 
@@ -10,7 +10,7 @@ Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates thir
 
 ## What is included?
 
-All eight source families are collected under this repository. **New dated versions consolidate all eight source families into one release.** The first unified release is published; obsolete source-specific releases have been removed. Pin a unified version instead.
+All eight source families are collected under this repository. **New dated versions consolidate all eight source families into one release.** The existing unified releases remain available. New OCI-backed releases use their dated catalog to resolve all source files, rather than thousands of release attachments.
 
 | Source | Contents | Download | License / attribution |
 |---|---|---|---|
@@ -25,102 +25,67 @@ All eight source families are collected under this repository. **New dated versi
 
 The main archive numbers above are from a completed, independently audited release. Future releases may differ; check the published **manifest**, not only this README. A family may contain source materials in a format that cannot be read as a simple bilingual StarDict dictionary.
 
-## Downloads and formats
+## Downloads — one pair, all available sources
 
-For normal language-pair downloads use [Releases → Latest](https://github.com/danilfg/dicts/releases/latest), for example [EN–RU KOReader](https://github.com/danilfg/dicts/releases/latest/download/koreader--en-ru.zip), [EN–RU FreeDict](https://github.com/danilfg/dicts/releases/latest/download/freedict--en-ru.zip), or [EN–RU WikDict](https://github.com/danilfg/dicts/releases/latest/download/wikdict--en-ru.zip).
+**[Current release](https://github.com/danilfg/dicts/releases/latest)** · **[GHCR package](https://github.com/danilfg/dicts/pkgs/container/dicts-data)** · **[Developer specification](docs/NORMALIZATION.md)**
 
-| Format | What it means |
-|---|---|
-| `koreader--PAIR.zip`, `freedict--PAIR.zip`, `wikdict--PAIR.zip` | Bilingual StarDict dictionary packages; an application must support the included files |
-| `enrichment--PAIR.json.gz` | Compact meanings and study examples (custom JSON format, **not** StarDict) |
-| `enrichments-extra--NNN.zip` | Groups of additional language indexes that must be extracted before use |
-| `lexicon--oewn-en.json.gz` | Normalized English WordNet index |
-| `omw--*` / `conceptnet--*` release assets | Original multilingual lexical-network files, requiring suitable readers |
-| `kaikki--*` / `tatoeba--*` release assets | Original textual corpora; large sources may be split into numbered `.partNNN` files |
+The next OCI-format release uses **`ghcr.io/danilfg/dicts-data`**, a public OCI **data artifact**, not a runnable Docker image. Releases remain the immutable, dated entry point and include catalogs, source manifests, licenses, checksums and change reports. Older published releases retain their original downloadable assets.
 
-For the **entire main dictionary collection**, use [BUNDLE-PARTS.json](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json) and download every listed `dicts-part-NNN.zip`, or `dicts-all.zip` when the collection fits in a single archive. These convenience bundles cover the bilingual collection. In unified versions the same release also contains full available raw corpora and WordNet/ConceptNet assets, separately named and individually downloadable.
+1. Read [LEXICAL-INDEX.json](https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json). Require `format: oci-pair-v1`.
+2. Pin the returned version and read its verified `PAIR-INDEX.json`. Choose the source and target language from the catalog.
+3. For every catalog group download the blocks for the exact **direction**, plus language-local blocks for its two languages. Each block is an independent, at most 32 MiB OCI blob, identified by SHA-256. No other language packages are required.
+4. Cache by digest, verify length and hash, read ZIP/GZIP JSON. Retain original provenance and licenses.
 
-Each unified version includes [RELEASE-MANIFEST.json](https://github.com/danilfg/dicts/releases/latest/download/RELEASE-MANIFEST.json) (every asset, size, SHA-256, and source group), `SHA256SUMS.txt` (release-wide verification), bilingual `manifest.json`, `BUNDLE-PARTS.json`, and `THIRD-PARTY-NOTICES.md`. Raw manifests and attribution files have `kaikki--` or `tatoeba--` prefixes. Lexical manifests and notices have `oewn--`, `omw--` or `conceptnet--` prefixes. Older releases use their original naming conventions. The inventory provides the complete download list for developers.
-
-### Download a complete version
-
-To fetch every asset of the latest version with the GitHub CLI:
+No Docker daemon, account, PAT or API key is needed for consumers after the package is public; request an anonymous GHCR pull token. For the first OCI release the maintainer may need to set package visibility to Public. The previous release remains current until the new release passes verification.
 
 ```bash
-gh release download --repo danilfg/dicts --pattern '*' --dir dicts-data
+python examples/lookup.py --list
+python examples/lookup.py --pair en-ru --install
+python examples/lookup.py car --pair en-ru
+mvn -f examples/java/pom.xml compile exec:java -Dexec.mainClass=DictsPair -Dexec.args="en-ru"
 ```
 
-For reproducible application builds, pin a dated version:
+See the [browser/Chrome example](examples/browser/oci-client.mjs) and [Java example](examples/java/src/main/java/DictsPair.java). Pin a real dated tag with `--version TAG` in Python or pass it as Java's second argument. Use the [complete inventory](https://github.com/danilfg/dicts/releases/latest/download/RELEASE-MANIFEST.json) to download a specific raw file or the full collection, rather than downloading all language units by default. Each logical file has a name, bytes, SHA-256 and, for OCI files, an `oci` descriptor. With ORAS:
 
 ```bash
-gh release download v2026.11.17.16.1 --repo danilfg/dicts --pattern '*' --dir dicts-data
+oras blob fetch ghcr.io/danilfg/dicts-data@sha256:<file-digest> --output <file-name>
 ```
 
-This downloads the source files and convenience bundles (some data are duplicated in those bundles). To download only needed assets, use the exact names and hashes in RELEASE-MANIFEST.json. Original per-source data licenses apply. The GitHub-generated source-code ZIP/TAR downloads contain the repository code only, not the release datasets.
+Replace placeholders with the manifest values and verify SHA-256. `gh release download` downloads release metadata, not all OCI data. `BUNDLE-PARTS.json` still maps convenience ZIP parts; raw numbered chunks are joined in order without modifying their bytes.
 
 ## Online dictionary search
 
 **[Open the multilingual translator](https://danilfg.github.io/dicts/)** — a GitHub Pages interface for comparing original KOReader, FreeDict and WikDict dictionary entries side by side. Choose the source and target languages, search a word or phrase, read complete available definitions, review examples and follow original copyright/source links.
 
-The search index is generated by the main [GitHub Actions workflow](.github/workflows/update.yml) and deployed from prebuilt compact normalized packs, with small on-demand gzip shards. See [Pages setup and data coverage](docs/PAGES.md). The deployed website now exposes **753 verified source–target language directions**, generated from 720 compact-enrichment directions plus original KOReader data for directions without equivalent compact indexes. For the initial six English/Russian/Spanish/German directions, it preserves complete original KOReader, FreeDict and WikDict articles. Other directions may have compact rather than full original articles; the unabridged source archives are still available in Releases. The published searchable site is **932.5 MB**, within the GitHub Pages limit.
+The search index is generated by the main [GitHub Actions workflow](.github/workflows/update.yml) and deployed from prebuilt compact normalized packs, with small on-demand gzip shards. See [Pages setup and data coverage](docs/PAGES.md). The deployed website now exposes **753 verified source–target language directions**, generated from 720 compact-enrichment directions plus original KOReader data for directions without equivalent compact indexes. For the initial six English/Russian/Spanish/German directions, it preserves complete original KOReader, FreeDict and WikDict articles. Other directions may have compact rather than full original articles; the unabridged source archives are available through the release inventory. The published searchable site is **932.5 MB**, within the GitHub Pages limit.
 
-**Semantic lookup is now integrated:** [Open English WordNet](https://github.com/danilfg/dicts/releases/latest), [Open Multilingual Wordnet](https://github.com/danilfg/dicts/releases/latest) and [ConceptNet](https://github.com/danilfg/dicts/releases/latest) appear in their own attributed cards whenever a matching indexed term exists. WordNet definitions and ConceptNet relations are **not additional literal translations**. The first published semantic lookup covers English and selected Spanish vocabulary; complete original lexical datasets are downloadable as independent assets of the unified version.
+**Semantic lookup is now integrated:** [Open English WordNet](https://github.com/danilfg/dicts/releases/latest), [Open Multilingual Wordnet](https://github.com/danilfg/dicts/releases/latest) and [ConceptNet](https://github.com/danilfg/dicts/releases/latest) appear in their own attributed cards whenever a matching indexed term exists. WordNet definitions and ConceptNet relations are **not additional literal translations**. The first published semantic lookup covers English and selected Spanish vocabulary; complete original lexical datasets are downloadable as OCI files listed in the unified release inventory.
 
 ## Normalized application data
 
-**For developers:** [Normalized format specification and JSON examples](docs/NORMALIZATION.md) · [Python reference client](examples/lookup.py).
+Format: **`oci-pair-v1`**, schema 1. See [normalization and JSON examples](docs/NORMALIZATION.md). Every source adapter produces a source-tagged unit. Applications dynamically iterate the groups in the pair index, not a hardcoded provider list.
 
-The unified workflow builds ready-to-read gzip JSON lookup shards and packages them into `normalized--GROUP-NNN.zip`. Start with [LEXICAL-INDEX.json](https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json) (available from the first successful normalized release), then read each group's index for ZIP names, member paths, SHA-256 and sizes.
-
-| Group | Coverage |
+| Group | Available normalized data |
 |---|---|
-| bilingual | Source-separated full available StarDict articles from KOReader, FreeDict and WikDict, indexed by pair; existing compact study records |
+| bilingual | Original readable KOReader, FreeDict and WikDict articles; selected legacy study records, by direction |
 | oewn | English definitions and synonyms |
-| omw | Automatically discovered individual WN-LMF language packages, original synset IDs and ILI identifiers; per-package licenses |
-| conceptnet | Selected source-attributed relations grouped by language (up to 100,000 terms per language and 12 relations per term) |
-| kaikki | Compact definitions, translations and parts of speech across discovered editions/languages; up to 10,000 terms per language per edition and approximately 200,000 terms per edition |
-| tatoeba | Compact attributed examples and linked translations across languages, up to 5,000 sentences per language |
-| pages / pages-lexical | Size-bounded prebuilt website lookup indexes; existing English/Spanish semantic subset |
+| omw | Individual WordNets with synset/ILI IDs and per-package licenses, by language |
+| conceptnet | Selected attributed same-language semantic relations and directional cross-language relations |
+| kaikki | Compact definitions, selected directional translations and parts of speech, by edition/language |
+| tatoeba | Compact attributed examples and directional linked translations |
+| pages / pages-lexical | Separate compact website-only indexes; not downloaded by pair clients |
 
-Source archives are preserved; compact study limits do not describe the full upstream corpus. ILI correspondence is a lexical concept link, not a verified literal translation. The extension must implement the new pack/index reader before it can use these files. The public site deploys prepared Pages-specific packs and does not download or normalize raw dictionaries.
-
-### Quick example (decompressed bilingual shard)
-
-```json
-{
-  "schema": 1,
-  "pair": "en-ru",
-  "words": {
-    "car": {
-      "translations": {
-        "koreader": ["автомобиль; машина"],
-        "freedict": ["автомобиль"],
-        "wikdict": ["машина"]
-      },
-      "meanings": [],
-      "examples": []
-    }
-  }
-}
-```
-
-Illustrative data, not verified upstream entries. The [format reference](docs/NORMALIZATION.md) shows actual schema fields for all source families, catalog discovery, shard hashing, ZIP layouts and checksums. After the first normalized release, try:
-
-```bash
-python examples/lookup.py car --pair en-ru
-python examples/lookup.py car --group oewn --language en
-python examples/lookup.py coche --group omw --language es
-```
+The raw source files are retained. Compact limits do not mean complete upstream coverage. ILI and graph relations are not guaranteed literal translations.
 
 ## Using the data in applications
 
 Useful for offline translators, e-readers, language-learning tools, NLP applications and individual dictionary libraries. All downloads are distributed through **danilfg/dicts**. During a build, GitHub Actions may contact the original source providers.
 
-The current **Learn Words with Cards** extension uses KOReader and compatible compact enrichment indexes. It does **not** automatically download every independent dictionary, grouped index, raw corpus, WordNet or ConceptNet graph. The lexical-network data need additional extension-side adapters before they can appear in popup definitions or study cards.
+The current **Learn Words with Cards** extension must adopt the OCI pair protocol before it can use the new artifacts. The reference browser module implements catalog verification and pair-specific blob downloads. The lexical-network data need additional extension-side adapters before they can appear in popup definitions or study cards.
 
 ## Updating and verifying sources
 
-Use [**Update all dictionary sources**](https://github.com/danilfg/dicts/actions/workflows/update.yml) → **Run workflow** → **main**. There are no mode options. This single workflow runs on the first day of every month at 04:17 UTC, and orchestrates checks, downloads, normalization, validation, release publication and the Pages deployment. Where an upstream supplies reliable SHA-256/SHA-512 or a strong HTTP ETag, unchanged files are reused from the last verified release instead of being downloaded again from upstream. Otherwise the data must be fetched to determine whether they changed. Unavailable dictionaries retain their last verified files when possible, regardless of source family; new unavailable files without prior versions are reported. Successful changes from other sources can be published in the same complete snapshot. Release notes and `REFRESH-REPORT.json` identify added, modified, removed, unchanged and retained source files and the reason for fallback. If no source data changed and normalized packs already exist, the draft is deleted. The first normalized release is a one-time format upgrade. Publication is blocked for integrity errors or missing mandatory normalized groups, not for upstream outages with verified fallback copies. Versions use `vYYYY.MM.DD.RUN.ATTEMPT` (UTC). Individual asset names and `/releases/latest/download/` URLs remain stable. The scheduled run is not a real-time upstream notification.
+Use [**Update all dictionary sources**](https://github.com/danilfg/dicts/actions/workflows/update.yml) → **Run workflow** → **main**. There are no mode options. This single workflow runs on the first day of every month at 04:17 UTC, and orchestrates checks, downloads, normalization, validation, release publication and the Pages deployment. Where an upstream supplies reliable SHA-256/SHA-512 or a strong HTTP ETag, unchanged files are reused from the last verified release instead of being downloaded again from upstream. Otherwise the data must be fetched to determine whether they changed. Unavailable dictionaries retain their last verified files when possible, regardless of source family; new unavailable files without prior versions are reported. Successful changes from other sources can be published in the same complete snapshot. Release notes and `REFRESH-REPORT.json` identify added, modified, removed, unchanged and retained source files and the reason for fallback. If no source data changed and normalized packs already exist, the draft is deleted. The first OCI pair release is a one-time format upgrade. Publication is blocked for integrity errors or missing mandatory normalized groups, not for upstream outages with verified fallback copies. Versions use `vYYYY.MM.DD.RUN.ATTEMPT` (UTC). Release catalog URLs remain stable; data files are fetched by digest instead of per-file release URLs. The scheduled run is not a real-time upstream notification.
 
 Run [**Audit published dictionary collections**](https://github.com/danilfg/dicts/actions/workflows/audit.yml) to check published SHA-256, bundle completeness, source notices and representative file formats. This **technical audit does not validate the accuracy of every dictionary entry**.
 
@@ -162,7 +127,11 @@ src/unified_release.py  Unified calendar-versioned release validation
 src/audit_release.py    Checksums and published-release audit
 src/normalize_sources.py   Normalized JSON conversion
 src/normalized_pack.py     Shard ZIP packaging and verification
+src/pair_pack.py           Language and direction units
+src/storage.py             Content-addressed OCI publishing and release receipts
 examples/lookup.py        Python reference client
+examples/java/             Java 17 reference client
+examples/browser/          Chrome MV3 download reference
 docs/NORMALIZATION.md     Developer format specification
 tests/              Automated tests
 koreader/ freedict/ wikdict/ kaikki/ tatoeba/

@@ -196,7 +196,7 @@ def main():
         source,pair=match.groups()
         published.setdefault(pair,{})[source]={
             "download_url":"https://github.com/danilfg/dicts/releases/download/"+
-                (args.release_tag or m.get("tag",""))+"/"+item["name"],
+                (args.release_tag or m.get("tag",""))+"/RELEASE-MANIFEST.json",
             "license":item.get("license","See original archive"),
             "attribution":item.get("attribution","See original archive"),
             "source_url":item.get("source_url",""),

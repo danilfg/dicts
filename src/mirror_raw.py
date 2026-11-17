@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mirror all available *text* dictionary editions without truncating source corpora.
 
-Data always land on the distributor's GitHub Releases, not in the Git history.
+Data land in the distributor's OCI package; GitHub Releases index the files.
 Only publisher rights/data text are redistributed; audio, media and external
 software are excluded. Every asset is chunked below GitHub's 2-GiB per-file cap.
 """
@@ -167,6 +167,9 @@ def main():
         for part in item["parts"]:
             with tempfile.TemporaryDirectory() as tmp:
                 name=part["asset"];path=Path(tmp)/name
+                from storage import link
+                if prior_assets[name].get("oci"):
+                    link(tag,prior_assets,[name]);continue
                 pull(prior_tag,[name],Path(tmp),prior_assets)
                 if path.stat().st_size!=part["bytes"]:raise ValueError("Previous raw part size mismatch")
                 from storage import publish
