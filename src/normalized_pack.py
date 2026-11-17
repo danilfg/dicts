@@ -3,6 +3,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import struct
 import zipfile
 from pathlib import Path
 
@@ -60,8 +61,14 @@ def pack(root,group,output,max_bytes=MAX_PACK):
                     shutil.copyfileobj(src,dst,1024*1024)
                 members[member]={"pack":name,"bytes":path.stat().st_size,"sha256":sha(path)}
         if dest.stat().st_size>=max_bytes:raise ValueError("Pack too large "+name)
-        with zipfile.ZipFile(dest) as z:
+        with zipfile.ZipFile(dest) as z, dest.open("rb") as raw:
             if z.testzip() is not None:raise ValueError("Corrupt ZIP "+name)
+            for entry in z.infolist():
+                raw.seek(entry.header_offset)
+                header=raw.read(30)
+                if header[:4]!=b"PK\x03\x04" or entry.compress_type!=zipfile.ZIP_STORED:raise ValueError("Invalid stored ZIP member")
+                name_len,extra_len=struct.unpack_from("<HH",header,26)
+                members[entry.filename]["offset"]=entry.header_offset+30+name_len+extra_len
         packages.append({"name":name,"bytes":dest.stat().st_size,"sha256":sha(dest)})
     doc={"schema":1,"group":group,"packages":packages,"members":members}
     write_json(output/f"normalized--{group}-index.json",doc)
