@@ -1,6 +1,6 @@
-"""Application transport: independent pair and language ZIPs inside release ZIPs.
+"""Application transport: independent pair and language ZIPs in OCI layers.
 
-Only the selected byte ranges are downloaded. Cross-language links are split
+Only the selected blobs are downloaded. Cross-language links are split
 by target language; no third-language translation data enters a pair payload.
 """
 import collections
@@ -13,9 +13,10 @@ import zipfile
 from pathlib import Path
 
 from build_pages import bucket,write_gzip
-from normalized_pack import pack,write_json
+from normalized_pack import write_json,sha
+from storage import REGISTRY,FORMAT
 
-LAYOUT="pair-range-v1"
+LAYOUT=FORMAT
 BLOCK_MAX=32*1024*1024
 LINK_BUCKETS=32
 # New lexical group adapters can register here without adding a client switch.
@@ -156,17 +157,23 @@ def pack_application(root,group,output):
                     for file in files:file.unlink()
             finally:db.close()
         if not any(directories.values()):raise ValueError("Empty application group "+group)
-        result=pack(units,group,output)
-        result.update(layout=LAYOUT,units=directories,pair_meta=pair_meta)
+        output.mkdir(parents=True,exist_ok=True)
+        members={}
+        for source_path in sorted(units.rglob("*.zip")):
+            key=source_path.relative_to(units).as_posix()
+            name="unit--"+group+"--"+key.replace("/","--")
+            target=output/name
+            source_path.replace(target)
+            members[key]={"name":name,"bytes":target.stat().st_size,"sha256":sha(target)}
+        result={"schema":1,"group":group,"layout":LAYOUT,"units":directories,"pair_meta":pair_meta,"members":members}
         write_json(output/f"normalized--{group}-index.json",result)
         return result
 
-def build_pair_index(tag,indexes,base):
+def build_pair_index(tag,indexes,base,assets):
     """Merge independently produced group directories into a small public API."""
     pairs={}; groups={}
     for group,doc in indexes.items():
-        if doc.get("layout")!=LAYOUT:raise ValueError("Missing range layout "+group)
-        packs={p["name"]:p for p in doc["packages"]}
+        if doc.get("layout")!=LAYOUT:raise ValueError("Missing OCI layout "+group)
         mapped={"pairs":{},"languages":{}}
         seen=set()
         for scope in mapped:
@@ -174,13 +181,14 @@ def build_pair_index(tag,indexes,base):
                 if not names or not (PAIR_RE if scope=="pairs" else LANG_RE).fullmatch(key):raise ValueError("Invalid unit "+key)
                 blocks=[]
                 for name in names:
-                    if name in seen:raise ValueError("Duplicate range block "+name)
-                    seen.add(name);m=doc["members"][name];p=packs[m["pack"]]
-                    off=m["offset"];size=m["bytes"]
-                    if off<0 or size<=0 or size>BLOCK_MAX or off+size>p["bytes"]:raise ValueError("Invalid range "+name)
-                    blocks.append({"asset":p["name"],"asset_bytes":p["bytes"],"offset":off,"bytes":size,"sha256":m["sha256"]})
+                    if name in seen:raise ValueError("Duplicate OCI block "+name)
+                    seen.add(name);m=doc["members"][name];row=assets[m["name"]]
+                    size=m["bytes"]
+                    if not 0<size<=BLOCK_MAX or row["size"]!=size or row["digest"]!="sha256:"+m["sha256"] or row.get("oci",{}).get("registry")!=REGISTRY:
+                        raise ValueError("Invalid OCI block "+name)
+                    blocks.append({"bytes":size,"sha256":m["sha256"],"manifest":row["oci"]["manifest"]})
                 mapped[scope][key]=blocks
-        if seen!=set(doc["members"]):raise ValueError("Unaddressed range block "+group)
+        if seen!=set(doc["members"]):raise ValueError("Unaddressed OCI block "+group)
         groups[group]=mapped
         for key,row in doc.get("pair_meta",{}).items():
             if key not in mapped["pairs"]:raise ValueError("Unaddressed pair "+key)
@@ -193,4 +201,4 @@ def build_pair_index(tag,indexes,base):
     for g in groups.values():
         g["pairs"]={k:v for k,v in g["pairs"].items() if k in pairs}
         g["languages"]={k:v for k,v in g["languages"].items() if k in languages}
-    return {"schema":1,"format":LAYOUT,"version":tag,"download_base":base,"pairs":pairs,"groups":groups}
+    return {"schema":1,"format":LAYOUT,"registry":REGISTRY,"version":tag,"download_base":base,"pairs":pairs,"groups":groups}

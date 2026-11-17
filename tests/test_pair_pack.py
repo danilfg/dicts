@@ -40,12 +40,13 @@ class PairPackTests(unittest.TestCase):
             write_gzip(lex/path/"00.json.gz",{"schema":1,"source":"kaikki","language":"en","words":{"car":{"definitions":["vehicle"],"translations":[{"text":"машина","language":"ru"},{"text":"Auto","language":"de"}]}}})
             write_json(lex/"data/lexical/kaikki/catalog.json",{"languages":[{"language":"en","package":"edition","path":path,"buckets":1}]})
             kdoc=pack_application(lex,"kaikki",out)
-            index=build_pair_index("v1",{"bilingual":doc,"kaikki":kdoc},"https://example.com/")
+            assets={m["name"]:{"size":m["bytes"],"digest":"sha256:"+m["sha256"],"oci":{"registry":"ghcr.io/danilfg/dicts-data","manifest":"sha256:"+"a"*64}} for d in (doc,kdoc) for m in d["members"].values()}
+            index=build_pair_index("v1",{"bilingual":doc,"kaikki":kdoc},"https://example.com/",assets)
             def records(group,scope,key):
                 result={}
                 for r in index["groups"][group][scope][key]:
-                    with (out/r["asset"]).open("rb") as stream:
-                        stream.seek(r["offset"]);data=stream.read(r["bytes"])
+                    name=next(n for n,a in assets.items() if a["digest"]=="sha256:"+r["sha256"])
+                    data=(out/name).read_bytes()
                     self.assertEqual(hashlib.sha256(data).hexdigest(),r["sha256"])
                     with zipfile.ZipFile(io.BytesIO(data)) as z:
                         for name in z.namelist():

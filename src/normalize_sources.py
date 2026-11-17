@@ -246,9 +246,11 @@ def run(tag,group,work,previous=""):
                 if index in prior:
                     pull(previous,[index],folder,prior)
                     doc=json.loads((folder/index).read_text())
-                    names=[item["name"] for item in doc["packages"]]
-                    pull(previous,names,folder,prior)
-                    upload(tag,[folder/index]+[folder/name for name in names])
+                    if doc.get("layout")!=LAYOUT:raise ValueError("Unexpected previous pair format")
+                    names=[item["name"] for item in doc["members"].values()]
+                    from storage import link
+                    link(tag,prior,names)
+                    upload(tag,[folder/index])
                     print("Reused verified normalized "+group,flush=True)
                     return
     if group in ("bilingual","pages"):

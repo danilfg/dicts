@@ -116,8 +116,10 @@ def publish(tag,paths):
         else:scopes.setdefault(scope_of(path.name),[]).append(path)
     if controls:upload_release(tag,controls,clobber=True)
     if not scopes:return
-    existing=read_receipts(tag)
     for scope,files in scopes.items():
+        name=f"oci--{scope}.json"
+        actual=physical(tag)
+        existing=read_receipts(tag,{name:actual[name]} if name in actual else {})
         rows=existing.get(scope,{})
         for i in range(0,len(files),BATCH):
             new=push_batch(tag,scope,files[i:i+BATCH])
@@ -127,7 +129,9 @@ def publish(tag,paths):
 
 def link(tag,assets,names):
     """Reuse registry manifests by digest, without uploading unchanged bytes."""
-    receipts=read_receipts(tag); touched=set()
+    touched={scope_of(n) for n in names}
+    actual=physical(tag)
+    receipts=read_receipts(tag,{n:r for n,r in actual.items() if RECEIPT.fullmatch(n) and RECEIPT.fullmatch(n)[1] in touched})
     for n in names:
         row=assets[n].get("oci")
         if not row:raise ValueError("Cannot link legacy release asset "+n)
@@ -136,7 +140,9 @@ def link(tag,assets,names):
 
 def remove(tag,names):
     from unified_release import REPO,gh
-    actual=physical(tag);receipts=read_receipts(tag,actual);wanted=set(names)
+    actual=physical(tag);wanted=set(names)
+    scopes={scope_of(n) for n in wanted}
+    receipts=read_receipts(tag,{n:r for n,r in actual.items() if RECEIPT.fullmatch(n) and RECEIPT.fullmatch(n)[1] in scopes})
     for scope,rows in receipts.items():
         if not wanted.intersection(rows):continue
         for n in wanted:rows.pop(n,None)
