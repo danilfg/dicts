@@ -24,14 +24,10 @@ from build_pages import normalize, bucket, write_gzip
 RELATIONS = {"RelatedTo","Synonym","Antonym","IsA","HasA","PartOf","UsedFor",
              "HasProperty","CapableOf","AtLocation","DerivedFrom","SimilarTo",
              "FormOf","DefinedAs","MannerOf","HasSubevent"}
-SOURCE_RELEASES = {
- "oewn": "lex-oewn-2025-edition-v1",
- "omw": "lex-omw-v2.0-v1",
- "conceptnet": "lex-conceptnet-5.7.0-v1",
-}
+RELEASE_URL = "https://github.com/danilfg/dicts/releases/latest"
 # Only project-owned, public release files are downloaded by GitHub Actions.
 def asset_url(source,filename):
-    return f"https://github.com/danilfg/dicts/releases/latest/download/{filename}" if os.getenv("DICT_UNIFIED_RELEASE") else f"https://github.com/danilfg/dicts/releases/download/{SOURCE_RELEASES[source]}/{filename}"
+    return f"{RELEASE_URL}/download/{filename}"
 
 def local(tag):return tag.rsplit("}",1)[-1]
 def wordnet_records(path:pathlib.Path):
@@ -151,15 +147,15 @@ def build(oewn:pathlib.Path,conceptnet:pathlib.Path,omw:list[tuple[str,pathlib.P
     sources={
        "oewn":{"title":"Open English WordNet","license":"CC BY 4.0; Princeton WordNet attribution",
           "source_url":"https://en-word.net/downloads",
-          "release_url":"https://github.com/danilfg/dicts/releases/tag/"+SOURCE_RELEASES["oewn"],
+          "release_url":RELEASE_URL,
           "languages":[]},
        "omw":{"title":"Open Multilingual Wordnet","license":"Per-lexicon; see original rights and citations",
           "source_url":"https://omwn.org/",
-          "release_url":"https://github.com/danilfg/dicts/releases/tag/"+SOURCE_RELEASES["omw"],
+          "release_url":RELEASE_URL,
           "languages":[]},
        "conceptnet":{"title":"ConceptNet","license":"CC BY-SA 4.0, with data-source attribution",
           "source_url":"https://github.com/commonsense/conceptnet5/blob/master/DATA-CREDITS.md",
-          "release_url":"https://github.com/danilfg/dicts/releases/tag/"+SOURCE_RELEASES["conceptnet"],
+          "release_url":RELEASE_URL,
           "languages":[]}
     }
     for src,records in [("oewn",{"en":oewn_data}),("omw",omw_data),("conceptnet",graph)]:
