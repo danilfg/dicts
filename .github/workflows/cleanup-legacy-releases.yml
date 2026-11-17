@@ -1,0 +1,70 @@
+name: Clean up legacy releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Preview or permanently remove pre-unified releases (old asset URLs will stop working)"
+        type: choice
+        options: [preview, delete]
+        default: preview
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-dicts
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.repository == 'danilfg/dicts' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CLEANUP_MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify that latest is a complete unified release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          [[ "$tag" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+\.[0-9]+$ ]]
+          python src/audit_release.py
+      - name: Preview or remove only legacy release records
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess
+          repo = os.environ["GITHUB_REPOSITORY"]
+          mode = os.environ["CLEANUP_MODE"]
+          assert mode in ("preview", "delete")
+          def api(*args):
+              return subprocess.check_output(["gh", "api", *args], text=True)
+          latest = json.loads(api(f"repos/{repo}/releases/latest"))
+          assert re.fullmatch(r"v\d{4}\.\d{2}\.\d{2}\.\d+\.\d+", latest["tag_name"])
+          listing = json.loads(api("--paginate", "--slurp", f"repos/{repo}/releases?per_page=30"))
+          pattern = re.compile(r"(?:data-\d{8}-\d{6}|raw-(?:kaikki|tatoeba)-\d{8}-\d{6}|lex-(?:oewn|omw|conceptnet)-[A-Za-z0-9.\-]+)")
+          candidates = [r for page in listing for r in page
+                        if pattern.fullmatch(r["tag_name"])
+                        and r["id"] != latest["id"]
+                        and r["created_at"] < latest["published_at"]]
+          print(f"Preserving latest: {latest['tag_name']}")
+          print(f"{mode}: {len(candidates)} legacy releases")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(f"\n## Legacy release cleanup ({mode})\n\n")
+              summary.write(f"Preserved latest: {latest['tag_name']}\n\n")
+              for r in candidates:
+                  record = f"{r['tag_name']} ({'draft' if r['draft'] else 'published'})"
+                  print(record, flush=True)
+                  if mode == "delete":
+                      # Delete release and its assets, not the corresponding git tag.
+                      api("--method", "DELETE", f"repos/{repo}/releases/{r['id']}")
+                      record += " — deleted"
+                  summary.write("- " + record + "\n")
+          PY
