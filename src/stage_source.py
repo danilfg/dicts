@@ -14,6 +14,10 @@ def belongs(name, source):
 
 def copy_source(previous,tag,previous_assets,prior):
     from normalized_pack import pull
+    from storage import link
+    linked=[n for n in prior if previous_assets[n].get("oci")]
+    if linked:link(tag,previous_assets,linked)
+    prior=[n for n in prior if n not in set(linked)]
     for start in range(0,len(prior),3):
         batch=prior[start:start+3]
         with tempfile.TemporaryDirectory() as tmp:
@@ -54,9 +58,8 @@ def stage(tag, previous, source):
                 report=json.loads((Path(tmp)/manifest).read_text())
                 expected={p["asset"] for item in report["sources"] for p in item["parts"]}
                 expected|={manifest,source+"--ATTRIBUTION-AND-LICENSE.txt"}
-                for name,asset in current.items():
-                    if belongs(name,source) and name not in expected:
-                        gh("api","--method","DELETE",f"repos/{REPO}/releases/assets/{asset['id']}")
+                from storage import remove
+                remove(tag,[name for name in current if belongs(name,source) and name not in expected])
         if source=="conceptnet" and "conceptnet--assertions-5.7.0.csv.gz" not in current:
             raise ValueError("Official CSV unavailable; retain prior CSV for normalization")
         return
@@ -65,24 +68,11 @@ def stage(tag, previous, source):
         reason=str(exc)[:350]
         print(f"::warning::{source}: refresh failed; retaining {previous}: {reason}",flush=True)
     # Delete incomplete assets of this source only. Never edit prior release.
-    for name,asset in inventory(tag).items():
-        if belongs(name,source):
-            gh("api","--method","DELETE",f"repos/{REPO}/releases/assets/{asset['id']}")
+    from storage import remove
+    remove(tag,[name for name in inventory(tag) if belongs(name,source)])
+    copy_source(previous,tag,previous_assets,prior)
     with tempfile.TemporaryDirectory() as tmp:
         folder=Path(tmp)
-        for start in range(0,len(prior),3):
-            batch=prior[start:start+3]
-            cmd=["gh","release","download",previous,"-R",REPO,"--dir",tmp]
-            for name in batch:cmd+=["--pattern",name]
-            subprocess.run(cmd,check=True)
-            import hashlib
-            for name in batch:
-                path=folder/name
-                with path.open("rb") as f:h=hashlib.file_digest(f,"sha256").hexdigest()
-                if h!=digest(previous_assets[name]) or path.stat().st_size!=previous_assets[name]["size"]:
-                    raise ValueError("Retained source checksum mismatch "+name)
-            upload(tag,[folder/name for name in batch])
-            for name in batch:(folder/name).unlink()
         note=folder/f"retained--{source}.json"
         note.write_text(json.dumps({"source":source,"previous_release":previous,"retained":True,"reason":reason})+"\n")
         upload(tag,[note])

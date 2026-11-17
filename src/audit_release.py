@@ -29,6 +29,9 @@ def api(route):
     with urlopen(r,timeout=60) as response:return json.load(response)
 
 def assets(release):
+    if release["tag_name"].startswith("v"):
+        from unified_release import inventory
+        return inventory(release["tag_name"])
     output=[];page=1
     while True:
         batch=api(f"repos/{REPO}/releases/{release['id']}/assets?per_page=100&page={page}")
@@ -39,8 +42,8 @@ def assets(release):
     return {x["name"]:x for x in output}
 
 def gh_download(tag,name,directory):
-    subprocess.run(["gh","release","download",tag,"-R",REPO,"--pattern",name,
-        "--dir",str(directory),"--clobber"],check=True)
+    from normalized_pack import pull
+    pull(tag,[name],directory)
     path=directory/name
     if not path.is_file():raise ValueError(f"Download missing: {tag}/{name}")
     return path

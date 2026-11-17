@@ -43,7 +43,8 @@ FALLBACKS={}
 def load_previous(out):
     if not PREVIOUS_TAG:return
     with tempfile.TemporaryDirectory() as tmp:
-        subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern','manifest.json','--dir',tmp],check=True)
+        from normalized_pack import pull
+        pull(PREVIOUS_TAG,['manifest.json'],Path(tmp))
         PREVIOUS.update({a['name']:a for a in json.loads((Path(tmp)/'manifest.json').read_text())['assets']})
 
 def carry_file(out,name,reason):
@@ -51,7 +52,8 @@ def carry_file(out,name,reason):
     if any(a['name']==name for a in ASSETS):return True
     FALLBACKS[name]={'source':name.split('--')[0], 'reason':str(reason)[:350], 'previous_release':PREVIOUS_TAG, 'retained':bool(item)}
     if not item:return False
-    subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern',name,'--dir',str(out),'--clobber'],check=True)
+    from normalized_pack import pull
+    pull(PREVIOUS_TAG,[name],out)
     path=out/name
     if path.stat().st_size!=item['bytes'] or sha256(path)!=item['sha256']:raise ValueError('Previous asset integrity mismatch: '+name)
     ASSETS.append(dict(item))
@@ -75,7 +77,8 @@ def carry_enrichment(source,reason):
         for row in words.values():row[field]=[x for x in row[field] if x.get('source')!=source]
     with tempfile.TemporaryDirectory() as tmp:
         name='enrichment--en-ru.json.gz'
-        subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern',name,'--dir',tmp],check=True)
+        from normalized_pack import pull
+        pull(PREVIOUS_TAG,[name],Path(tmp))
         path=Path(tmp)/name
         if sha256(path)!=PREVIOUS[name]['sha256']:raise ValueError('Previous enrichment integrity mismatch')
         with gzip.open(path,'rt',encoding='utf8') as f:words=json.load(f)['words']
@@ -143,7 +146,7 @@ def record(path,source,pair,url,license_expression,version="",modified=False,att
        "license_url":LEGAL[source]["license_url"],
        "attribution":attribution,"modified":modified,
        "bytes":path.stat().st_size,"sha256":sha256(path),
-       "download_url":"https://github.com/danilfg/dicts/releases/latest/download/"+path.name})
+       "download_url":"https://github.com/danilfg/dicts/releases/latest/download/RELEASE-MANIFEST.json"})
 
 def zip_members(path):
     with zipfile.ZipFile(path) as z:

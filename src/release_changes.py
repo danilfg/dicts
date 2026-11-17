@@ -51,10 +51,8 @@ def confirm_zip_changes(previous_tag, candidate_tag, names, repo):
             old, new = Path(tmp)/"old", Path(tmp)/"new"
             for tag, folder in ((previous_tag, old), (candidate_tag, new)):
                 folder.mkdir()
-                args = ["gh", "release", "download", tag, "-R", repo, "--dir", str(folder)]
-                for name in batch:
-                    args.extend(["--pattern", name])
-                subprocess.run(args, check=True)
+                from normalized_pack import pull
+                pull(tag,batch,folder)
             changed = [name for name in batch
                        if zip_fingerprint(old/name) != zip_fingerprint(new/name)]
             all_changed.extend(changed)

@@ -105,7 +105,8 @@ def mirror_one_once(url,prefix,tag,manifest,previous=None,copy_previous=None):
         if file is None or size==0:return
         file.close();file=None
         hashval=hasher.hexdigest()
-        gh("release","upload",tag,str(dest),"-R",os.environ["GITHUB_REPOSITORY"],"--clobber")
+        from storage import publish
+        publish(tag,[dest])
         pieces.append({"asset":dest.name,"bytes":size,"sha256":hashval,"index":index})
         print(f"Published {dest.name}: {size} bytes",flush=True)
         dest.unlink(missing_ok=True)
@@ -168,7 +169,8 @@ def main():
                 name=part["asset"];path=Path(tmp)/name
                 pull(prior_tag,[name],Path(tmp),prior_assets)
                 if path.stat().st_size!=part["bytes"]:raise ValueError("Previous raw part size mismatch")
-                gh("release","upload",tag,str(path),"-R",owner,"--clobber")
+                from storage import publish
+                publish(tag,[path])
     report={"schema":1,"source":source,"created":dt.datetime.now(dt.timezone.utc).isoformat(),
         "source_index":KAikki_INDEX if source=="kaikki" else TATOEBA_INDEX,
         "full_text_archive":True,"excluded":["media","audio","template dumps","non-dictionary logs"],
@@ -195,7 +197,8 @@ def main():
         legal.write_text(json.dumps(report["licenses"],ensure_ascii=False,indent=2)+
             "\nOriginal URLs and SHA-256: SOURCE-MANIFEST.json\n"+
             "No guarantee of translation quality or content correctness.\n")
-        gh("release","upload",tag,str(doc),str(legal),"-R",owner,"--clobber")
+        from storage import publish
+        publish(tag,[doc,legal])
     print(f"RAW SOURCE COMPLETE: https://github.com/{owner}/releases/tag/{tag}",flush=True)
 
 if __name__=="__main__":main()

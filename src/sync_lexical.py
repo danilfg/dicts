@@ -295,9 +295,8 @@ def publish(dir,state,tag):
     for name in ("LEXICAL-MANIFEST.json","THIRD-PARTY-LEXICAL-NOTICES.md"):
         (dir/name).rename(dir/(state["source"]+"--"+name))
     names=[p for p in sorted(dir.iterdir()) if p.is_file()]
-    if len(names)>1000:raise ValueError("GitHub release asset limit exceeded")
-    for i in range(0,len(names),10):
-        gh("release","upload",tag,*map(str,names[i:i+10]),"-R",REPO,"--clobber")
+    from storage import publish
+    publish(tag,names)
     print("STAGED "+state["source"]+" in "+tag,flush=True)
 def main():
     p=argparse.ArgumentParser();p.add_argument("--source",choices=tuple(SOURCES),required=True)
