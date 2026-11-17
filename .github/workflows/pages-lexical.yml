@@ -2,8 +2,6 @@ name: Index WordNet and ConceptNet for GitHub Pages
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -11,7 +9,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-lexical-deployment
+  group: deploy-dictionary-pages
   cancel-in-progress: true
 
 jobs:
@@ -36,20 +34,18 @@ jobs:
           set -euo pipefail
           mkdir -p lexical-input
           get() {
-            local tag="$1" name="$2"
-            echo "Downloading $name from $tag"
+            local name="$1"
+            echo "Downloading $name from latest unified release"
             curl --fail --location --retry 4 --retry-all-errors --retry-delay 5 \
               --connect-timeout 40 --max-time 1800 \
               --output "lexical-input/$name" \
-              "https://github.com/danilfg/dicts/releases/latest/download/$name" || \
-            curl --fail --location --retry 3 --output "lexical-input/$name" \
-              "https://github.com/danilfg/dicts/releases/download/$tag/$name"
+              "https://github.com/danilfg/dicts/releases/latest/download/$name"
             test -s "lexical-input/$name"
           }
-          get lex-oewn-2025-edition-v1 lexicon--oewn-en.json.gz
-          get lex-omw-v2.0-v1 omw--omw-en-2.0.tar.xz
-          get lex-omw-v2.0-v1 omw--omw-es-2.0.tar.xz
-          get lex-conceptnet-5.7.0-v1 conceptnet--assertions-5.7.0.csv.gz
+          get lexicon--oewn-en.json.gz
+          get omw--omw-en-2.0.tar.xz
+          get omw--omw-es-2.0.tar.xz
+          get conceptnet--assertions-5.7.0.csv.gz
       - name: Generate source-attributed WordNet and ConceptNet index
         shell: bash
         run: |
