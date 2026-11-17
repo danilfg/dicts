@@ -66,7 +66,7 @@ def run(tag,previous):
             if n.startswith("retained--"):
                 retained[n]=json.loads((folder/n).read_text())
         changed,zips=diff_plan(old,new)
-        changed+=confirm_zip_changes(previous,tag,zips,REPO)
+        changed+=confirm_zip_changes(previous,tag,zips,REPO,old,new)
         report=plan(old,new,changed,retained,tag,previous)
         p=folder/"REFRESH-REPORT.json";p.write_text(json.dumps(report,indent=2)+"\n")
         upload(tag,[p])

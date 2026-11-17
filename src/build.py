@@ -38,13 +38,18 @@ ENRICH=defaultdict(dict)
 INDEX_DB=None
 PREVIOUS_TAG=os.getenv('PREVIOUS_RELEASE_TAG','')
 PREVIOUS={}
+PREVIOUS_ASSETS={}
 FALLBACKS={}
 
 def load_previous(out):
     if not PREVIOUS_TAG:return
+    from unified_release import inventory
+    PREVIOUS_ASSETS.clear()
+    PREVIOUS_ASSETS.update(inventory(PREVIOUS_TAG))
+    print('Previous release inventory cached:',len(PREVIOUS_ASSETS),'files',flush=True)
     with tempfile.TemporaryDirectory() as tmp:
         from normalized_pack import pull
-        pull(PREVIOUS_TAG,['manifest.json'],Path(tmp))
+        pull(PREVIOUS_TAG,['manifest.json'],Path(tmp),PREVIOUS_ASSETS)
         PREVIOUS.update({a['name']:a for a in json.loads((Path(tmp)/'manifest.json').read_text())['assets']})
 
 def carry_file(out,name,reason):
@@ -53,10 +58,11 @@ def carry_file(out,name,reason):
     FALLBACKS[name]={'source':name.split('--')[0], 'reason':str(reason)[:350], 'previous_release':PREVIOUS_TAG, 'retained':bool(item)}
     if not item:return False
     from normalized_pack import pull
-    pull(PREVIOUS_TAG,[name],out)
+    pull(PREVIOUS_TAG,[name],out,PREVIOUS_ASSETS)
     path=out/name
     if path.stat().st_size!=item['bytes'] or sha256(path)!=item['sha256']:raise ValueError('Previous asset integrity mismatch: '+name)
     ASSETS.append(dict(item))
+    print('Reused verified prior file',name,flush=True)
     if item['source'] in ('freedict','wikdict'):
         with zipfile.ZipFile(path) as z:
             raw=stardict({Path(n).name:z.read(n) for n in z.namelist() if n.endswith(('.ifo','.idx','.dict','.dict.dz','.dict.gz','.idx.gz','.syn'))})
@@ -78,7 +84,7 @@ def carry_enrichment(source,reason):
     with tempfile.TemporaryDirectory() as tmp:
         name='enrichment--en-ru.json.gz'
         from normalized_pack import pull
-        pull(PREVIOUS_TAG,[name],Path(tmp))
+        pull(PREVIOUS_TAG,[name],Path(tmp),PREVIOUS_ASSETS)
         path=Path(tmp)/name
         if sha256(path)!=PREVIOUS[name]['sha256']:raise ValueError('Previous enrichment integrity mismatch')
         with gzip.open(path,'rt',encoding='utf8') as f:words=json.load(f)['words']
@@ -506,11 +512,13 @@ def main():
     except Exception as exc:carry_family(out,"koreader",exc)
     if args.mode=="all":
         for source,fn in (("freedict",build_freedict),("wikdict",build_wikdict)):
+            print('Starting',source,flush=True)
             try:fn(out)
             except Exception as exc:
                 carry_family(out,source,exc)
                 print(source,"RETAINED",str(exc),flush=True)
         for source,fn in (("kaikki",build_kaikki),("tatoeba",build_tatoeba)):
+            print('Starting compact enrichment',source,flush=True)
             try:fn()
             except Exception as exc:
                 carry_enrichment(source,exc)
@@ -518,6 +526,7 @@ def main():
     else:
         for source in ("freedict","wikdict","kaikki","tatoeba"):
             SOURCE_STATUSES[source]={"status":"not_requested","reason":"core mode"}
+    print('Saving bilingual indexes',flush=True)
     save_enrichment(out)
     INDEX_DB.close()
     (out/"_enrich.sqlite3").unlink(missing_ok=True)

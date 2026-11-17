@@ -1,5 +1,6 @@
 """Refresh or safely retain a complete, previously published source family."""
 import argparse
+import collections
 import json
 import subprocess
 import tempfile
@@ -18,8 +19,14 @@ def copy_source(previous,tag,previous_assets,prior):
     linked=[n for n in prior if previous_assets[n].get("oci")]
     if linked:link(tag,previous_assets,linked)
     prior=[n for n in prior if n not in set(linked)]
-    for start in range(0,len(prior),3):
-        batch=prior[start:start+3]
+    batches=[];batch=[];size=0
+    for n in prior:
+        amount=previous_assets[n]["size"]
+        if batch and (len(batch)>=48 or size+amount>1_800_000_000):
+            batches.append(batch);batch=[];size=0
+        batch.append(n);size+=amount
+    if batch:batches.append(batch)
+    for batch in batches:
         with tempfile.TemporaryDirectory() as tmp:
             folder=Path(tmp)
             pull(previous,batch,folder,previous_assets)
@@ -45,9 +52,11 @@ def stage(tag, previous, source):
             copy_source(previous,tag,previous_assets,prior)
             print("Reused unchanged verified "+source,flush=True)
             return
-        proc=subprocess.run(["python",str(Path(__file__).with_name(script)),"--source",source],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=dict(os.environ,UNIFIED_RELEASE_TAG=tag))
-        print(proc.stdout,flush=True)
-        if proc.returncode:raise ValueError(" ".join(proc.stdout.splitlines()[-4:])[-350:])
+        tail=collections.deque(maxlen=4)
+        with subprocess.Popen(["python","-u",str(Path(__file__).with_name(script)),"--source",source],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=dict(os.environ,UNIFIED_RELEASE_TAG=tag)) as proc:
+            for line in proc.stdout:
+                print(line,end="",flush=True);tail.append(line.strip())
+            if proc.wait():raise ValueError(" ".join(tail)[-350:])
         current=inventory(tag)
         if source in ("kaikki","tatoeba"):
             # A retried transfer may previously have uploaded longer trailing parts.

@@ -16,19 +16,24 @@ def sha(path):
         return hashlib.file_digest(f,"sha256").hexdigest()
 
 def pull(tag, names, directory, assets=None):
-    from unified_release import REPO, inventory, digest
+    from unified_release import REPO, inventory, digest, download
     directory.mkdir(parents=True, exist_ok=True)
     assets = assets if assets is not None else inventory(tag)
     names = sorted(set(names))
     from storage import fetch_blob
     for name in names:
         if name not in assets:raise ValueError("Missing input "+name)
-    oci=[n for n in names if assets[n].get("oci")]
+    # Published legacy assets have immutable public download URLs. Fetch those
+    # directly rather than invoking gh release download (which re-lists assets).
+    # Registry blobs use the registry, not the GitHub REST API.
+    direct=[n for n in names if assets[n].get("oci") or assets[n].get("published")]
     def fetch_one(n):
-        path=directory/n
-        if not path.exists() or path.stat().st_size!=assets[n]["size"] or sha(path)!=digest(assets[n]):fetch_blob(assets[n]["oci"],path)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:list(pool.map(fetch_one,oci))
-    chosen=set(oci)
+        item=assets[n];path=directory/n
+        if path.exists() and path.stat().st_size==item["size"] and sha(path)==digest(item):return
+        if item.get("oci"):fetch_blob(item["oci"],path)
+        else:download(item,path)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:list(pool.map(fetch_one,direct))
+    chosen=set(direct)
     names=[n for n in names if n not in chosen]
     for start in range(0,len(names),40):
         batch = names[start:start+40]

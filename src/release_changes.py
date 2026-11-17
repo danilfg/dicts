@@ -43,16 +43,20 @@ def zip_fingerprint(path):
             files[info.filename] = h.hexdigest()
     return files
 
-def confirm_zip_changes(previous_tag, candidate_tag, names, repo):
+def confirm_zip_changes(previous_tag, candidate_tag, names, repo, previous_assets=None, candidate_assets=None):
+    if not names:return []
+    from unified_release import inventory
+    previous_assets=previous_assets if previous_assets is not None else inventory(previous_tag)
+    candidate_assets=candidate_assets if candidate_assets is not None else inventory(candidate_tag)
     all_changed=[]
     for start in range(0, len(names), 25):
         batch = names[start:start + 25]
         with tempfile.TemporaryDirectory() as tmp:
             old, new = Path(tmp)/"old", Path(tmp)/"new"
-            for tag, folder in ((previous_tag, old), (candidate_tag, new)):
+            for tag, folder, assets in ((previous_tag, old, previous_assets), (candidate_tag, new, candidate_assets)):
                 folder.mkdir()
                 from normalized_pack import pull
-                pull(tag,batch,folder)
+                pull(tag,batch,folder,assets)
             changed = [name for name in batch
                        if zip_fingerprint(old/name) != zip_fingerprint(new/name)]
             all_changed.extend(changed)

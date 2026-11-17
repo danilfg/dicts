@@ -86,9 +86,8 @@ def read_receipts(tag,assets=None):
     result={}
     if not names:return result
     with tempfile.TemporaryDirectory() as tmp:
-        cmd=["gh","release","download",tag,"-R",REPO,"--dir",tmp]
-        for n in names:cmd+=["--pattern",n]
-        subprocess.run(cmd,check=True)
+        from normalized_pack import pull
+        pull(tag,names,Path(tmp),assets)
         for n in names:
             path=Path(tmp)/n
             if path.stat().st_size!=assets[n]["size"] or sha(path)!=digest(assets[n]):raise ValueError("Receipt integrity mismatch "+n)
@@ -125,8 +124,9 @@ def publish(tag,paths):
         for i in range(0,len(files),BATCH):
             new=push_batch(tag,scope,files[i:i+BATCH])
             rows.update({r["name"]:r for r in new})
-            # Persist progress after each batch; draft not visible until final validation.
-            write_receipt(tag,scope,rows)
+            print(f"OCI {scope}: staged {min(i+BATCH,len(files))}/{len(files)} files",flush=True)
+        # Commit one receipt per scope, not one REST upload per batch.
+        write_receipt(tag,scope,rows)
 
 def link(tag,assets,names):
     """Reuse registry manifests by digest, without uploading unchanged bytes."""

@@ -14,6 +14,7 @@ from release_changes import diff_plan, confirm_zip_changes
 from normalized_pack import GROUPS
 from pair_pack import build_pair_index,LAYOUT
 from pathlib import Path
+from functools import lru_cache
 REPO="danilfg/dicts"
 OLD={"main":"data-20261116-093517","kaikki":"raw-kaikki-20261116-090335",
      "tatoeba":"raw-tatoeba-20261116-090344","oewn":"lex-oewn-2025-edition-v1",
@@ -29,18 +30,28 @@ def release(tag):
         pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases?per_page=100"))
         return next(r for page in pages for r in page if r["tag_name"]==tag)
     return json.loads(gh("api",f"repos/{REPO}/releases/tags/{tag}"))
-def physical_inventory(tag):
+@lru_cache(maxsize=16)
+def release_identity(tag):
     rel=release(tag)
+    return rel['id'],not rel['draft']
+def physical_inventory(tag):
+    release_id,published=release_identity(tag)
     # The release response includes the assets; use pagination if the
     # response looks capped, and always validate completeness afterwards.
-    pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{rel['id']}/assets?per_page=100"))
+    pages=json.loads(gh("api","--paginate","--slurp",f"repos/{REPO}/releases/{release_id}/assets?per_page=100"))
     rows=[a for page in pages for a in page]
     assert len({a["name"] for a in rows})==len(rows)
-    return {a["name"]:a for a in rows}
+    return {a["name"]:dict(a,published=published) for a in rows}
+@lru_cache(maxsize=8)
+def published_inventory(tag):
+    from storage import expand
+    return expand(tag,physical_inventory(tag))
 def inventory(tag):
     from storage import expand
     for attempt in range(5):
-        try:return expand(tag,physical_inventory(tag))
+        try:
+            if release_identity(tag)[1]:return published_inventory(tag)
+            return expand(tag,physical_inventory(tag))
         except (subprocess.CalledProcessError,ValueError,FileNotFoundError):
             if attempt==4:raise
             time.sleep(2*(attempt+1))
