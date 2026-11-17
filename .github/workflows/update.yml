@@ -20,7 +20,7 @@ on:
         options: [all, consolidate]
         default: all
   schedule:
-    - cron: '17 4 * * *'
+    - cron: '17 4 1 * *'
 permissions:
   contents: write
 concurrency:
