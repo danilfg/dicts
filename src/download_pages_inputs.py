@@ -54,7 +54,7 @@ def main():
     with urllib.request.urlopen(urllib.request.Request(MAIN_CATALOG,headers={
         "User-Agent":"danilfg-dicts-pages-index/1.0"}),timeout=90) as response:
         target=response.geturl()
-    match=re.search(r"/releases/tag/(data-[A-Za-z0-9-]+)",target)
+    match=re.search(r"/releases/tag/(data-[A-Za-z0-9-]+|v[0-9.]+)",target)
     if not match:raise ValueError("Could not determine latest published dictionary release: "+target)
     tag=match.group(1)
     url=REPO+"/releases/download/"+tag+"/"

@@ -12,6 +12,7 @@ import gzip
 import json
 import hashlib
 import io
+import os
 import pathlib
 import tarfile
 import urllib.parse
@@ -30,7 +31,7 @@ SOURCE_RELEASES = {
 }
 # Only project-owned, public release files are downloaded by GitHub Actions.
 def asset_url(source,filename):
-    return f"https://github.com/danilfg/dicts/releases/download/{SOURCE_RELEASES[source]}/{filename}"
+    return f"https://github.com/danilfg/dicts/releases/latest/download/{filename}" if os.getenv("DICT_UNIFIED_RELEASE") else f"https://github.com/danilfg/dicts/releases/download/{SOURCE_RELEASES[source]}/{filename}"
 
 def local(tag):return tag.rsplit("}",1)[-1]
 def wordnet_records(path:pathlib.Path):

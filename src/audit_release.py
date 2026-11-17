@@ -187,7 +187,14 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         directory=Path(temp)
         audit_main(directory)
-        audit_raw(directory)
+        latest=api(f"repos/{REPO}/releases/latest")
+        if latest["tag_name"].startswith("v"):
+            from unified_release import inventory, validate
+            with tempfile.TemporaryDirectory() as check:
+                validate(latest["tag_name"],inventory(latest["tag_name"]),Path(check))
+            OUTPUT.append("All eight unified release source inventories validated.")
+        else:
+            audit_raw(directory)
     print("\n".join(OUTPUT),flush=True)
     summary=os.getenv("GITHUB_STEP_SUMMARY")
     if summary:

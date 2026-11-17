@@ -1,16 +1,13 @@
 name: Publish all available dictionary directions
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/pages-all-pairs.yml
-      - src/download_pages_inputs.py
-      - src/build_pages.py
-      - src/select_compact_pages.py
   workflow_dispatch:
   release:
     types: [published]
+  workflow_run:
+    workflows: [Update all dictionary sources]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -23,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.repository == 'danilfg/dicts' && (github.event_name != 'release' || startsWith(github.event.release.tag_name, 'data-'))
+    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'release' || (startsWith(github.event.release.tag_name, 'data-') || startsWith(github.event.release.tag_name, 'v')))
     runs-on: ubuntu-latest
     timeout-minutes: 140
     steps:
@@ -68,7 +65,7 @@ jobs:
         with:
           path: site
   deploy:
-    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'data-')
+    if: github.event_name != 'release' || (startsWith(github.event.release.tag_name, 'data-') || startsWith(github.event.release.tag_name, 'v'))
     needs: build
     runs-on: ubuntu-latest
     environment:
