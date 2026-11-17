@@ -4,6 +4,7 @@ import json
 import subprocess
 import tempfile
 import time
+import os
 from pathlib import Path
 from unified_release import REPO, inventory, digest, release, gh, upload
 
@@ -15,7 +16,9 @@ def stage(tag, previous, source):
     previous_assets=inventory(previous)
     prior=[n for n in previous_assets if belongs(n,source)]
     try:
-        subprocess.run(["python",str(Path(__file__).with_name(script)),"--source",source],check=True)
+        proc=subprocess.run(["python",str(Path(__file__).with_name(script)),"--source",source],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=dict(os.environ,UNIFIED_RELEASE_TAG=tag))
+        print(proc.stdout,flush=True)
+        if proc.returncode:raise ValueError(" ".join(proc.stdout.splitlines()[-4:])[-350:])
         current=inventory(tag)
         if source=="conceptnet" and "conceptnet--assertions-5.7.0.csv.gz" not in current:
             raise ValueError("Official CSV unavailable; retain prior CSV for normalization")
@@ -30,8 +33,8 @@ def stage(tag, previous, source):
             gh("api","--method","DELETE",f"repos/{REPO}/releases/assets/{asset['id']}")
     with tempfile.TemporaryDirectory() as tmp:
         folder=Path(tmp)
-        for start in range(0,len(prior),20):
-            batch=prior[start:start+20]
+        for start in range(0,len(prior),3):
+            batch=prior[start:start+3]
             cmd=["gh","release","download",previous,"-R",REPO,"--dir",tmp]
             for name in batch:cmd+=["--pattern",name]
             subprocess.run(cmd,check=True)
