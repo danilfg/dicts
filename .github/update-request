@@ -1,1 +1,1 @@
-2026-11-17: initialize and validate public GHCR OCI pair-selective release pipeline.
+2026-11-17: verify OCI migration after deterministic ZIP timestamp fix.
