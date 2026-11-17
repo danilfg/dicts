@@ -18,6 +18,7 @@ import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urljoin
+from upstream_cache import request,strong_etag
 
 MAX_CHUNK=1_450_000_000
 UA="danilfg-dicts-archive-mirror/1.0 (https://github.com/danilfg/dicts)"
@@ -83,8 +84,15 @@ def rights(source):
         "modification":"Upstream original text-export archives split if they exceed the per-asset limit; no audio included"
     }
 
-def mirror_one_once(url,prefix,tag,manifest):
-    request=urllib.request.Request(url,headers={"User-Agent":UA})
+def mirror_one_once(url,prefix,tag,manifest,previous=None,copy_previous=None):
+    etag=previous.get("upstream_etag") if previous and previous["original_url"]==url else None
+    response=request(url,UA,etag,180)
+    if response is None:
+        if not previous or not copy_previous:raise ValueError("304 without verified baseline")
+        copy_previous(previous)
+        manifest.append(previous)
+        return previous["parts"]
+    current=response.headers.get("ETag")
     pieces=[]
     index=0;size=0;hasher=None;dest=None;file=None
     def start_part():
@@ -103,7 +111,7 @@ def mirror_one_once(url,prefix,tag,manifest):
         dest.unlink(missing_ok=True)
     start_part()
     try:
-        with urllib.request.urlopen(request,timeout=180) as response:
+        with response:
             while data:=response.read(1024*1024):
                 pos=0
                 while pos<len(data):
@@ -120,12 +128,13 @@ def mirror_one_once(url,prefix,tag,manifest):
     if not pieces:raise ValueError("Zero-length upstream download: "+url)
     manifest.append({"original_url":url,"parts":pieces,
         "reassembly":"Join parts by numeric index without altering bytes.",
-        "original_bytes":sum(x["bytes"] for x in pieces)})
+        "original_bytes":sum(x["bytes"] for x in pieces),
+        "upstream_etag":current if strong_etag(current) else None})
     return pieces
 
-def mirror_one(url,prefix,tag,manifest):
+def mirror_one(url,prefix,tag,manifest,previous=None,copy_previous=None):
     for attempt in range(3):
-        try:return mirror_one_once(url,prefix,tag,manifest)
+        try:return mirror_one_once(url,prefix,tag,manifest,previous,copy_previous)
         except (OSError, TimeoutError):
             if attempt==2:raise
             print(f"Retrying {prefix} after network error, attempt {attempt+2}",flush=True)
@@ -140,16 +149,45 @@ def main():
     if owner!="danilfg/dicts":raise ValueError("Refusing to publish to a foreign repository")
     discovered=discover(source)
     tag=os.environ["UNIFIED_RELEASE_TAG"]
+    prior_tag=os.getenv("PREVIOUS_RELEASE_TAG","")
+    prior={};prior_assets={}
+    if prior_tag:
+        from unified_release import inventory
+        from normalized_pack import pull
+        prior_assets=inventory(prior_tag)
+        with tempfile.TemporaryDirectory() as tmp:
+            name=source+"--SOURCE-MANIFEST.json"
+            pull(prior_tag,[name],Path(tmp),prior_assets)
+            for item in json.loads((Path(tmp)/name).read_text())["sources"]:
+                prefix=item["parts"][0]["asset"].rsplit(".part",1)[0]
+                prior[prefix]=item
+    def copy_previous(item):
+        from normalized_pack import pull
+        for part in item["parts"]:
+            with tempfile.TemporaryDirectory() as tmp:
+                name=part["asset"];path=Path(tmp)/name
+                pull(prior_tag,[name],Path(tmp),prior_assets)
+                if path.stat().st_size!=part["bytes"]:raise ValueError("Previous raw part size mismatch")
+                gh("release","upload",tag,str(path),"-R",owner,"--clobber")
     report={"schema":1,"source":source,"created":dt.datetime.now(dt.timezone.utc).isoformat(),
         "source_index":KAikki_INDEX if source=="kaikki" else TATOEBA_INDEX,
         "full_text_archive":True,"excluded":["media","audio","template dumps","non-dictionary logs"],
-        "discovered":len(discovered),"licenses":rights(source),"sources":[],"status":"in_progress"}
+        "discovered":len(discovered),"upstream_discovered":len(discovered),"licenses":rights(source),"sources":[],"fallbacks":{},"status":"in_progress"}
     with tempfile.TemporaryDirectory() as d:
         for key,url in discovered.items():
             label="kaikki--"+key if source=="kaikki" else "tatoeba--"+key.replace(".tar.bz2","")
             print("Downloading",key,url,flush=True)
-            mirror_one(url,label,tag,report["sources"])
-        report["status"]="complete" if len(report["sources"])==len(discovered) else "incomplete"
+            try:
+                mirror_one(url,label,tag,report["sources"],prior.get(label),copy_previous)
+            except (OSError,ValueError,subprocess.CalledProcessError) as exc:
+                item=prior.get(label)
+                report["fallbacks"][label]={"source":source,"retained":bool(item),"previous_release":prior_tag,"reason":str(exc)[:350]}
+                if item:
+                    copy_previous(item)
+                    report["sources"].append(item)
+                print("::warning::Unable to refresh "+label+": "+str(exc)[:350],flush=True)
+        report["discovered"]=len(report["sources"])
+        report["status"]="complete" if report["sources"] else "incomplete"
         if report["status"]!="complete":raise ValueError("Not all discovered files were mirrored")
         doc=Path(d)/(source+"--SOURCE-MANIFEST.json")
         doc.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")

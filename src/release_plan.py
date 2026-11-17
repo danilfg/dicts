@@ -53,9 +53,15 @@ def run(tag,previous):
         folder=Path(tmp)
         # Retention markers are produced before the report; validate after adding it.
         from normalized_pack import pull
-        pull(tag,["manifest.json"]+[n for n in new if n.startswith("retained--")],folder,new)
+        raw_reports=[s+"--SOURCE-MANIFEST.json" for s in ("kaikki","tatoeba")]
+        pull(tag,["manifest.json"]+raw_reports+[n for n in new if n.startswith("retained--")],folder,new)
         data=json.loads((folder/"manifest.json").read_text())
         retained=dict(data.get("fallbacks",{}))
+        for name in raw_reports:
+            doc=json.loads((folder/name).read_text())
+            # A whole-family fallback has its own marker; avoid stale historical failure records.
+            marker="retained--"+doc["source"]+".json"
+            if marker not in new:retained.update(doc.get("fallbacks",{}))
         for n in new:
             if n.startswith("retained--"):
                 retained[n]=json.loads((folder/n).read_text())

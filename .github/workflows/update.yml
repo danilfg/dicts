@@ -60,39 +60,7 @@ jobs:
       - name: Check and download KOReader archives
         id: ko
         continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p upstream
-          remote="DanielGregorini/koreader-dicts"
-          tag=""
-          if tag=$(gh release view --repo "$remote" --json tagName --jq .tagName 2>/dev/null) &&
-             gh release download "$tag" --repo "$remote" --pattern '*.zip' --dir upstream; then
-            echo "Source: original author release $remote $tag"
-          else
-            echo "::warning::Original KOReader unavailable; use last verified release assets"
-            exit 1
-          fi
-          REMOTE="$remote" TAG="$tag" python - <<'PY'
-          import hashlib,json,os,subprocess
-          from pathlib import Path
-          repo=os.environ['REMOTE'];tag=os.environ['TAG']
-          release=json.loads(subprocess.check_output(
-              ['gh','api',f'repos/{repo}/releases/tags/{tag}']))
-          zipassets=[x for x in release['assets'] if x['name'].endswith('.zip')]
-          if len(zipassets)<74:raise SystemExit('Too few source dictionaries')
-          for asset in zipassets:
-              path=Path('upstream')/asset['name']
-              if not path.is_file():raise SystemExit(f'Missing archive {asset["name"]}')
-              digest=asset.get('digest')
-              if digest and digest.startswith('sha256:'):
-                  got=hashlib.sha256(path.read_bytes()).hexdigest()
-                  if got!=digest.split(':',1)[1]:
-                      raise SystemExit(f'Upstream SHA-256 mismatch: {asset["name"]}')
-          (Path('upstream')/'SOURCE_INFO.json').write_text(
-              json.dumps({'repository':repo,'tag':tag,'expected':len(zipassets)}))
-          print(f'Verified {len(zipassets)} original archive files from {repo}@{tag}')
-          PY
+        run: python src/refresh_koreader.py --previous "$PREVIOUS_RELEASE_TAG" --out upstream
       - name: Discard incomplete KOReader download
         if: steps.ko.outcome == 'failure'
         run: rm -rf upstream && mkdir upstream

@@ -1,1 +1,1 @@
-2026-11-17: initialize normalized release pipeline with source fallback.
+2026-11-17: validate normalized release pipeline, universal source fallback, and conditional upstream downloads.

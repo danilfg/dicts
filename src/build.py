@@ -26,6 +26,7 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import quote
+from upstream_cache import request,strong_etag
 
 ROOT=Path(__file__).resolve().parent.parent
 CONFIG=json.loads((ROOT/"configs/sources.json").read_text(encoding="utf8"))
@@ -47,9 +48,9 @@ def load_previous(out):
 
 def carry_file(out,name,reason):
     item=PREVIOUS.get(name)
+    if any(a['name']==name for a in ASSETS):return True
     FALLBACKS[name]={'source':name.split('--')[0], 'reason':str(reason)[:350], 'previous_release':PREVIOUS_TAG, 'retained':bool(item)}
     if not item:return False
-    if any(a['name']==name for a in ASSETS):return True
     subprocess.run(['gh','release','download',PREVIOUS_TAG,'-R','danilfg/dicts','--pattern',name,'--dir',str(out),'--clobber'],check=True)
     path=out/name
     if path.stat().st_size!=item['bytes'] or sha256(path)!=item['sha256']:raise ValueError('Previous asset integrity mismatch: '+name)
@@ -111,6 +112,23 @@ def read_url(url,limit=160_000_000):
             if attempt==2:raise
             time.sleep(2**attempt)
 
+def conditional_read(url,previous,limit):
+    etag=previous.get("upstream_etag") if previous.get("source_url")==url else None
+    for attempt in range(3):
+        try:
+            response=request(url,USER_AGENT,etag,120)
+            if response is None:return None,etag
+            with response as r:
+                current=r.headers.get("ETag")
+                buf=io.BytesIO()
+                while data:=r.read(1<<20):
+                    buf.write(data)
+                    if buf.tell()>limit:raise ValueError("Download size limit exceeded: "+url)
+                return buf.getvalue(), current if strong_etag(current) else None
+        except OSError:
+            if attempt==2:raise
+            time.sleep(2**attempt)
+
 def sha256(path):
     h=hashlib.sha256()
     with open(path,"rb") as f:
@@ -140,6 +158,7 @@ def mirror_koreader(out,upstream):
     expected=int(info.get("expected",CONFIG["koreader"]["expected"]))
     if expected<CONFIG["koreader"]["expected"] or len(files)!=expected:
         raise ValueError("Expected %d or more verified KOReader ZIPs; found %d"%(expected,len(files)))
+    FALLBACKS.update(info.get('fallbacks',{}))
     source_repo=info.get("repository",CONFIG["koreader"]["repo"])
     source_tag=info.get("tag",CONFIG["koreader"]["tag"])
     for f in files:
@@ -156,6 +175,11 @@ def mirror_koreader(out,upstream):
             tag=next((label for label,regex in patterns if re.search(regex,license_text,re.I)),"SEE-EMBEDDED-LICENSE")
         dest=out/("koreader--"+f.name)
         shutil.copyfile(f,dest)   # exact original bytes; license and attribution stay inside
+        if dest.name in FALLBACKS and FALLBACKS[dest.name]["retained"]:
+            item=PREVIOUS[dest.name]
+            if sha256(dest)!=item["sha256"]:raise ValueError("Retained KOReader mismatch")
+            ASSETS.append(dict(item))
+            continue
         record(dest,"koreader",f.stem,
                "https://github.com/"+source_repo+"/releases/tag/"+source_tag,
                tag,source_tag,False,
@@ -307,7 +331,13 @@ def build_wikdict(out):
     for pair in requested:
         url=cfg["dir"]+"wikdict-"+pair+".zip"
         try:
-            b=read_url(url,100_000_000)
+            name="wikdict--"+pair+".zip"
+            b,etag=conditional_read(url,PREVIOUS.get(name,{}),100_000_000)
+            if b is None:
+                carry_file(out,name,"HTTP 304: upstream archive unchanged")
+                FALLBACKS.pop(name,None)
+                count+=1
+                continue
             with zipfile.ZipFile(io.BytesIO(b)) as z:
                 if z.testzip():raise ValueError("Corrupt upstream ZIP")
                 data={Path(n).name:z.read(n) for n in z.namelist() if not n.endswith("/")}
@@ -320,6 +350,7 @@ def build_wikdict(out):
             merge(pair,extract_glossary(parsed),"wikdict")
             record(dest,"wikdict",pair,url,"CC-BY-SA-4.0","source version: online directory",
                    True,notice)
+            if etag:ASSETS[-1]["upstream_etag"]=etag
             count+=1
         except Exception as e:
             if carry_file(out,"wikdict--"+pair+".zip",e):count+=1

@@ -7,15 +7,40 @@ import time
 import os
 from pathlib import Path
 from unified_release import REPO, inventory, digest, release, gh, upload
+from upstream_cache import matching_digest
 
 def belongs(name, source):
     return name.startswith(source+"--") or (source=="oewn" and name.startswith("lexicon--oewn-"))
+
+def copy_source(previous,tag,previous_assets,prior):
+    from normalized_pack import pull
+    for start in range(0,len(prior),3):
+        batch=prior[start:start+3]
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp)
+            pull(previous,batch,folder,previous_assets)
+            upload(tag,[folder/name for name in batch])
+
+def upstream_unchanged(source,previous_assets):
+    # GitHub's authoritative asset SHA-256 allows skipping unchanged upstream archives.
+    from sync_lexical import SOURCES,upstream_release
+    if source not in ("oewn","omw"):return False
+    rel=upstream_release(SOURCES[source]["repo"])
+    upstream=[a for a in rel["assets"] if (a["name"].endswith((".zip",".gz")) if source=="oewn" else a["name"].endswith(".tar.xz") or a["name"]=="index.toml")]
+    originals={n for n in previous_assets if n.startswith(source+"--") and
+               (n.endswith((".zip",".gz")) if source=="oewn" else n.endswith(".tar.xz") or n=="omw--index.toml")}
+    return bool(upstream) and originals=={source+"--"+a["name"] for a in upstream} and all(
+        matching_digest(previous_assets[source+"--"+a["name"]],a) for a in upstream)
 
 def stage(tag, previous, source):
     script="mirror_raw.py" if source in ("kaikki","tatoeba") else "sync_lexical.py"
     previous_assets=inventory(previous)
     prior=[n for n in previous_assets if belongs(n,source)]
     try:
+        if prior and upstream_unchanged(source,previous_assets):
+            copy_source(previous,tag,previous_assets,prior)
+            print("Reused unchanged verified "+source,flush=True)
+            return
         proc=subprocess.run(["python",str(Path(__file__).with_name(script)),"--source",source],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=dict(os.environ,UNIFIED_RELEASE_TAG=tag))
         print(proc.stdout,flush=True)
         if proc.returncode:raise ValueError(" ".join(proc.stdout.splitlines()[-4:])[-350:])
@@ -35,7 +60,7 @@ def stage(tag, previous, source):
         if source=="conceptnet" and "conceptnet--assertions-5.7.0.csv.gz" not in current:
             raise ValueError("Official CSV unavailable; retain prior CSV for normalization")
         return
-    except (subprocess.CalledProcessError, ValueError) as exc:
+    except (subprocess.CalledProcessError,ValueError,OSError) as exc:
         if not prior:raise
         reason=str(exc)[:350]
         print(f"::warning::{source}: refresh failed; retaining {previous}: {reason}",flush=True)
