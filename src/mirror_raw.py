@@ -13,6 +13,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 import urllib.request
 from html.parser import HTMLParser
 from pathlib import Path
@@ -82,7 +83,7 @@ def rights(source):
         "modification":"Upstream original text-export archives split if they exceed the per-asset limit; no audio included"
     }
 
-def mirror_one(url,prefix,tag,manifest):
+def mirror_one_once(url,prefix,tag,manifest):
     request=urllib.request.Request(url,headers={"User-Agent":UA})
     pieces=[]
     index=0;size=0;hasher=None;dest=None;file=None
@@ -121,6 +122,14 @@ def mirror_one(url,prefix,tag,manifest):
         "reassembly":"Join parts by numeric index without altering bytes.",
         "original_bytes":sum(x["bytes"] for x in pieces)})
     return pieces
+
+def mirror_one(url,prefix,tag,manifest):
+    for attempt in range(3):
+        try:return mirror_one_once(url,prefix,tag,manifest)
+        except (OSError, TimeoutError):
+            if attempt==2:raise
+            print(f"Retrying {prefix} after network error, attempt {attempt+2}",flush=True)
+            time.sleep(5*(attempt+1))
 
 def main():
     p=argparse.ArgumentParser()
