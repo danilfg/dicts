@@ -44,6 +44,7 @@ def zip_fingerprint(path):
     return files
 
 def confirm_zip_changes(previous_tag, candidate_tag, names, repo):
+    all_changed=[]
     for start in range(0, len(names), 25):
         batch = names[start:start + 25]
         with tempfile.TemporaryDirectory() as tmp:
@@ -56,7 +57,6 @@ def confirm_zip_changes(previous_tag, candidate_tag, names, repo):
                 subprocess.run(args, check=True)
             changed = [name for name in batch
                        if zip_fingerprint(old/name) != zip_fingerprint(new/name)]
-            if changed:
-                return changed
+            all_changed.extend(changed)
         print(f"Compared repacked dictionaries: {min(start+25,len(names))}/{len(names)}", flush=True)
-    return []
+    return all_changed

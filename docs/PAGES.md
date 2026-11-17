@@ -77,3 +77,7 @@ The website renders external content as **text, not active HTML**.
 Even source-separated entries may contain incomplete or erroneous content:
 there is no guarantee of linguistic accuracy. For per-source terms
 and redistribution obligations see [legal/NOTICE.md](../legal/NOTICE.md).
+
+## Unified release pipeline
+
+The monthly update workflow now stages sources (retaining verified prior data when upstream fails), creates normalized release packs, validates them, publishes, and invokes the Pages reusable workflow. Pages downloads only the prepared `pages` and `pages-lexical` groups, verifies hashes and extracts them. The full application indexes are separately available in Releases and are not subject to the Pages 1 GB site cap. Manual Pages deployment is for recovery after a successful normalized release.

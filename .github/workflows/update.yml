@@ -2,100 +2,64 @@ name: Update all dictionary sources
 on:
   push:
     branches: [main]
-    paths:
-      - .github/workflows/update.yml
-      - src/unified_release.py
-      - src/release_changes.py
-      - src/build.py
-      - src/mirror_raw.py
-      - src/sync_lexical.py
-      - configs/sources.json
-      - tests/test_release_changes.py
+    paths: [.github/update-request]
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "all = refresh upstream; consolidate = migrate existing verified legacy snapshot"
-        type: choice
-        required: true
-        options: [all, consolidate]
-        default: all
   schedule:
     - cron: '17 4 1 * *'
 permissions:
   contents: write
+  pages: write
+  id-token: write
 concurrency:
   group: update-dicts
   cancel-in-progress: false
 jobs:
   prepare:
-    if: github.repository == 'danilfg/dicts'
+    if: github.repository == 'danilfg/dicts' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.setup.outputs.tag }}
-      mode: ${{ steps.setup.outputs.mode }}
+      previous: ${{ steps.setup.outputs.previous }}
     env:
       GH_TOKEN: ${{ github.token }}
-      MODE: ${{ inputs.mode || 'all' }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test all source parsers and release policies
+        run: |
+          python -m compileall -q src tests
+          python -m unittest discover -s tests -v
+          node --test tests/test_entry_format.cjs
       - id: setup
         shell: bash
         run: |
           set -euo pipefail
-          latest="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
-          if [[ "$GITHUB_EVENT_NAME" == push && "$latest" != v* ]]; then MODE=consolidate; fi
-          if [[ "$MODE" == consolidate && "$latest" == v* ]]; then
-            echo "::error::Migration already completed; use all"; exit 1
-          fi
+          previous="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          [[ "$previous" == v* ]]
           tag="v$(date -u +'%Y.%m.%d').$GITHUB_RUN_NUMBER.$GITHUB_RUN_ATTEMPT"
-          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --latest=false --title "Dicts $tag" --notes "Draft until all eight source inventories pass."
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --latest=false --title "Dicts $tag" --notes "Verified source refresh and normalization in progress."
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
-  migrate:
-    needs: prepare
-    if: needs.prepare.outputs.mode == 'consolidate'
-    runs-on: ubuntu-latest
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {source: main, partition: 0, partitions: 4}
-          - {source: main, partition: 1, partitions: 4}
-          - {source: main, partition: 2, partitions: 4}
-          - {source: main, partition: 3, partitions: 4}
-          - {source: kaikki, partition: 0, partitions: 1}
-          - {source: tatoeba, partition: 0, partitions: 1}
-          - {source: oewn, partition: 0, partitions: 1}
-          - {source: omw, partition: 0, partitions: 1}
-          - {source: conceptnet, partition: 0, partitions: 1}
-    env:
-      GH_TOKEN: ${{ github.token }}
-      TAG: ${{ needs.prepare.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python src/unified_release.py migrate --tag "$TAG" --source ${{ matrix.source }} --partition ${{ matrix.partition }} --partitions ${{ matrix.partitions }}
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+
   build-and-release:
     needs: prepare
-    if: needs.prepare.outputs.mode == 'all'
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 350
     env:
       GH_TOKEN: ${{ github.token }}
       MODE: all
       UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      PREVIOUS_RELEASE_TAG: ${{ needs.prepare.outputs.previous }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Check source code and licensing fixtures
-        run: |
-          python -m compileall -q src tests
-          python -m unittest discover -s tests -v
-      - name: Download source archives from owned KOReader mirror
+      - name: Check and download KOReader archives
+        id: ko
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -106,13 +70,8 @@ jobs:
              gh release download "$tag" --repo "$remote" --pattern '*.zip' --dir upstream; then
             echo "Source: original author release $remote $tag"
           else
-            echo "::warning::Original release unavailable; using independently mirrored fallback"
-            rm -f upstream/*.zip
-            remote="danilfg/koreader-dicts"
-            tag="v1.3.0"
-            gh release download "$tag" --repo "$remote" --pattern '*.zip' --dir upstream
-            gh release download "$tag" --repo "$remote" --pattern SHA256SUMS --dir upstream
-            ( cd upstream && sha256sum -c SHA256SUMS )
+            echo "::warning::Original KOReader unavailable; use last verified release assets"
+            exit 1
           fi
           REMOTE="$remote" TAG="$tag" python - <<'PY'
           import hashlib,json,os,subprocess
@@ -134,76 +93,81 @@ jobs:
               json.dumps({'repository':repo,'tag':tag,'expected':len(zipassets)}))
           print(f'Verified {len(zipassets)} original archive files from {repo}@{tag}')
           PY
-      - name: Build dictionaries, enrichments and legal manifests
-        shell: bash
+      - name: Discard incomplete KOReader download
+        if: steps.ko.outcome == 'failure'
+        run: rm -rf upstream && mkdir upstream
+      - name: Build bilingual sources and legacy study indexes with per-dictionary fallback
         run: |
           set -euo pipefail
-          python src/build.py --upstream upstream --out dist --mode "$MODE"
-          python -m json.tool dist/manifest.json >/dev/null
-          test "$(find dist -maxdepth 1 -type f -name 'koreader--*.zip' | wc -l)" -ge 74
-          test -s dist/THIRD-PARTY-NOTICES.md
+          python src/build.py --upstream upstream --out dist --mode all
           python src/package_release.py --dist dist
-          test -s dist/BUNDLE-PARTS.json
-          test -s dist/SHA256SUMS.txt
-      - name: Stage main dictionaries in shared draft
-        run: |
           rm -f dist/SHA256SUMS.txt
           gh release upload "$UNIFIED_RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY"
 
-  raw-text-corpora:
+  refresh:
     needs: prepare
-    if: needs.prepare.outputs.mode == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
-        source: [kaikki, tatoeba]
+        source: [kaikki, tatoeba, oewn, omw, conceptnet]
     env:
       GH_TOKEN: ${{ github.token }}
       UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      PREVIOUS_RELEASE_TAG: ${{ needs.prepare.outputs.previous }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate full source discovery
-        run: |
-          python -m unittest discover -s tests -v
-      - name: Stage all available upstream text archives, preserving licenses
-        run: |
-          python src/mirror_raw.py --source ${{ matrix.source }}
+      - name: Refresh source or retain the last verified copy
+        run: python src/stage_source.py --tag "$UNIFIED_RELEASE_TAG" --previous "$PREVIOUS_RELEASE_TAG" --source ${{ matrix.source }}
 
-  lexical-resources:
-    needs: prepare
-    if: needs.prepare.outputs.mode == 'all'
+  detect-changes:
+    needs: [prepare, build-and-release, refresh]
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 180
+    outputs:
+      changed: ${{ steps.detect.outputs.changed }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      PREVIOUS: ${{ needs.prepare.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: detect
+        run: python src/release_plan.py --tag "$TAG" --previous "$PREVIOUS"
+
+  normalize:
+    needs: [prepare, detect-changes]
+    if: needs.detect-changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
     strategy:
       fail-fast: false
       matrix:
-        source: [oewn, omw, conceptnet]
+        group: [bilingual, pages, oewn, omw, conceptnet, kaikki, tatoeba, pages-lexical]
     env:
       GH_TOKEN: ${{ github.token }}
-      UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      PREVIOUS: ${{ needs.prepare.outputs.previous }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate licenses and converters before publication
-        run: |
-          python -m compileall -q src
-          python -m unittest discover -s tests -v
-      - name: Stage lexical sources in shared draft
-        run: python src/sync_lexical.py --source ${{ matrix.source }}
-
+      - name: Build or reuse verified normalized JSON shards
+        run: python src/normalize_sources.py --tag "$TAG" --previous "$PREVIOUS" --group ${{ matrix.group }}
 
   publish:
-    needs: [prepare, migrate, build-and-release, raw-text-corpora, lexical-resources]
-    if: always() && needs.prepare.result == 'success' && ((needs.prepare.outputs.mode == 'consolidate' && needs.migrate.result == 'success') || (needs.prepare.outputs.mode == 'all' && needs.build-and-release.result == 'success' && needs.raw-text-corpora.result == 'success' && needs.lexical-resources.result == 'success'))
+    needs: [prepare, detect-changes, normalize]
+    if: needs.detect-changes.outputs.changed == 'true' && needs.normalize.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.prepare.outputs.tag }}
@@ -213,15 +177,26 @@ jobs:
         with:
           python-version: '3.12'
       - run: python src/unified_release.py finalize --tag "$TAG"
-  cleanup-incomplete:
+
+  pages:
     needs: [prepare, publish]
+    uses: ./.github/workflows/pages-all-pairs.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+  cleanup-incomplete:
+    needs: [prepare, detect-changes, normalize, publish]
     if: always() && needs.prepare.result == 'success' && needs.publish.result != 'success'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ needs.prepare.outputs.tag }}
     steps:
-      - name: Remove only this failed run's draft
+      - name: Delete only this unpublished draft
         run: |
           if [[ "$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" == true ]]; then
             gh release delete "$TAG" -R "$GITHUB_REPOSITORY" --yes

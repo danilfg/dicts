@@ -127,7 +127,7 @@ def normalize_conceptnet(path,root,folder):
                 try:meta=json.loads(cols[4])
                 except ValueError:continue
                 if not meta.get("license"):continue
-                edge={"relation":relation,"license":meta["license"],"dataset":meta.get("dataset"),"uri":cols[0],"weight":meta.get("weight",1)}
+                edge={"relation":relation,"license":meta["license"],"dataset":meta.get("dataset"),"uri":cols[0],"weight":float(meta.get("weight") or 1)}
                 for left,right in [(a,b)]+([(b,a)] if relation in ("RelatedTo","Synonym","Antonym","SimilarTo") else []):
                     emit(lang(left[0]),[left[1],dict(edge,word=right[1],language=lang(right[0]))])
     finally:
@@ -230,9 +230,26 @@ def normalize_tatoeba(tag,assets,root,folder):
         if row:result.append(row)
     return result
 
-def run(tag,group,work):
+def run(tag,group,work,previous=""):
     assets=inventory(tag);root=work/"normalized";folder=work/"inputs";folder.mkdir(parents=True,exist_ok=True)
     result=[]
+    if previous:
+        prior=inventory(previous)
+        if "LEXICAL-INDEX.json" in prior:
+            pull(tag,["REFRESH-REPORT.json"],folder,assets)
+            report=json.loads((folder/"REFRESH-REPORT.json").read_text())
+            relevant={"bilingual":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages-lexical":("oewn","omw","conceptnet")}.get(group,(group,))
+            unchanged=all(report["sources"][s]["status"] in ("unchanged","retained") for s in relevant)
+            if unchanged and group not in ("bilingual","pages","pages-lexical"):
+                index=f"normalized--{group}-index.json"
+                if index in prior:
+                    pull(previous,[index],folder,prior)
+                    doc=json.loads((folder/index).read_text())
+                    names=[item["name"] for item in doc["packages"]]
+                    pull(previous,names,folder,prior)
+                    upload(tag,[folder/index]+[folder/name for name in names])
+                    print("Reused verified normalized "+group,flush=True)
+                    return
     if group in ("bilingual","pages"):
         normalize_bilingual(tag,assets,root,folder,group=="pages")
     elif group=="oewn":
@@ -248,6 +265,7 @@ def run(tag,group,work):
             package=name.removeprefix("omw--").removesuffix(".tar.xz")
             row=shards(root,group,language,words,package)
             row["rights"]=licenses.get(name.removeprefix("omw--"),{})
+            if not row["rights"].get("license"):raise ValueError("Missing component license "+name)
             result.append(row)
     elif group=="conceptnet":
         name="conceptnet--assertions-5.7.0.csv.gz";pull(tag,[name],folder,assets)
@@ -269,5 +287,5 @@ def run(tag,group,work):
     upload(tag,sorted(out.iterdir()))
 
 if __name__=="__main__":
-    p=argparse.ArgumentParser();p.add_argument("--tag",required=True);p.add_argument("--group",required=True);p.add_argument("--work",default="normalization-work")
-    a=p.parse_args();run(a.tag,a.group,Path(a.work))
+    p=argparse.ArgumentParser();p.add_argument("--tag",required=True);p.add_argument("--group",required=True);p.add_argument("--work",default="normalization-work");p.add_argument("--previous",default="")
+    a=p.parse_args();run(a.tag,a.group,Path(a.work),a.previous)

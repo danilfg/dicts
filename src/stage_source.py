@@ -20,6 +20,18 @@ def stage(tag, previous, source):
         print(proc.stdout,flush=True)
         if proc.returncode:raise ValueError(" ".join(proc.stdout.splitlines()[-4:])[-350:])
         current=inventory(tag)
+        if source in ("kaikki","tatoeba"):
+            # A retried transfer may previously have uploaded longer trailing parts.
+            from normalized_pack import pull
+            with tempfile.TemporaryDirectory() as tmp:
+                manifest=source+"--SOURCE-MANIFEST.json"
+                pull(tag,[manifest],Path(tmp),current)
+                report=json.loads((Path(tmp)/manifest).read_text())
+                expected={p["asset"] for item in report["sources"] for p in item["parts"]}
+                expected|={manifest,source+"--ATTRIBUTION-AND-LICENSE.txt"}
+                for name,asset in current.items():
+                    if belongs(name,source) and name not in expected:
+                        gh("api","--method","DELETE",f"repos/{REPO}/releases/assets/{asset['id']}")
         if source=="conceptnet" and "conceptnet--assertions-5.7.0.csv.gz" not in current:
             raise ValueError("Official CSV unavailable; retain prior CSV for normalization")
         return

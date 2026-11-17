@@ -1,106 +1,42 @@
 name: Publish all available dictionary directions
-
 on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
   workflow_dispatch:
-  release:
-    types: [published]
-  workflow_run:
-    workflows: [Update all dictionary sources]
-    types: [completed]
-    branches: [main]
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: deploy-dictionary-pages
-  cancel-in-progress: true
-
+  cancel-in-progress: false
 jobs:
   build:
-    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && (github.event_name != 'release' || (startsWith(github.event.release.tag_name, 'data-') || startsWith(github.event.release.tag_name, 'v')))
+    if: github.repository == 'danilfg/dicts'
     runs-on: ubuntu-latest
-    timeout-minutes: 140
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate parser and client
+      - name: Validate and extract already normalized Pages data
         run: |
-          python -m unittest discover -s tests -v
-          node --check site/app.js
+          set -euo pipefail
+          tag="$REQUESTED_TAG"
+          if [[ -z "$tag" ]]; then tag="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"; fi
+          python src/deploy_normalized_pages.py --tag "$tag" --site-dir site
           node --test tests/test_entry_format.cjs
-      - name: Download all KOReader pairs and all compact enrichment pairs from our Releases
-        run: python src/download_pages_inputs.py --dir downloads
-      - name: Produce searchable language-pair catalog and all compact data
-        shell: bash
-        run: |
-          set -euo pipefail
-          # The last full original-archive conversion was 1.119 GB.
-          # Prefer complete source files only for pairs with no compact index;
-          # every full archive remains in the dictionary Releases.
-          python src/select_compact_pages.py --downloads downloads --skipped excluded-pages-zips
-          python src/build_pages.py \
-            --download-dir downloads \
-            --manifest downloads/manifest.json \
-            --release-tag "$(cat downloads/.release-tag)" \
-            --site-dir site
-          python - <<'PY'
-          import json, pathlib
-          m=json.loads(pathlib.Path("downloads/manifest.json").read_text())
-          indexed=json.loads(pathlib.Path("site/data/catalog.json").read_text())
-          indexed_pairs={x["pair"] for x in indexed["pairs"]}
-          published_pairs={x["pair"] for x in m["assets"]
-            if x.get("source") in ("koreader","freedict","wikdict") and x.get("pair")}
-          missing=sorted(published_pairs-indexed_pairs)
-          if missing:raise AssertionError("Unsearchable published directions: "+repr(missing[:30]))
-          print("ALL LANGUAGE DIRECTIONS VERIFIED:",len(indexed_pairs),flush=True)
-          PY
-      - name: Download published licensed lexical data without GitHub REST API
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p lexical-input
-          get() {
-            local name="$1"
-            echo "Downloading $name from latest unified release"
-            curl --fail --location --retry 4 --retry-all-errors --retry-delay 5 \
-              --connect-timeout 40 --max-time 1800 \
-              --output "lexical-input/$name" \
-              "https://github.com/danilfg/dicts/releases/latest/download/$name"
-            test -s "lexical-input/$name"
-          }
-          get lexicon--oewn-en.json.gz
-          get omw--omw-en-2.0.tar.xz
-          get omw--omw-es-2.0.tar.xz
-          get conceptnet--assertions-5.7.0.csv.gz
-      - name: Generate source-attributed WordNet and ConceptNet index
-        shell: bash
-        run: |
-          python src/build_pages_lexical.py \
-            --oewn lexical-input/lexicon--oewn-en.json.gz \
-            --omw en=lexical-input/omw--omw-en-2.0.tar.xz \
-            --omw es=lexical-input/omw--omw-es-2.0.tar.xz \
-            --conceptnet lexical-input/conceptnet--assertions-5.7.0.csv.gz \
-            --site-dir site
-          python - <<'PY'
-          import json, pathlib
-          c=json.loads(pathlib.Path("site/data/lexical/catalog.json").read_text())
-          assert c["sources"]["oewn"]["languages"], "OEWN unavailable"
-          assert c["sources"]["conceptnet"]["languages"], "ConceptNet unavailable"
-          assert c["sources"]["omw"]["languages"], "OMW unavailable"
-          size=sum(x.stat().st_size for x in pathlib.Path("site").rglob("*") if x.is_file())
-          assert size<945_000_000, f"Pages site too large: {size}"
-          print("Lexical Pages index ready, bytes",size)
-          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
   deploy:
-    if: github.event_name != 'release' || (startsWith(github.event.release.tag_name, 'data-') || startsWith(github.event.release.tag_name, 'v'))
     needs: build
     runs-on: ubuntu-latest
     environment:

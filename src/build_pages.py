@@ -147,6 +147,7 @@ def main():
     cli.add_argument("--site-dir",default="site")
     cli.add_argument("--manifest",default="downloads/manifest.json")
     cli.add_argument("--release-tag",default="")
+    cli.add_argument("--max-site-bytes",type=int,default=MAX_SITE_BYTES)
     args=cli.parse_args()
     downloads=Path(args.download_dir)
     site=Path(args.site_dir)
@@ -208,7 +209,7 @@ def main():
     (site/"data"/"catalog.json").write_text(json.dumps(stats,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
     (site/".nojekyll").write_text("")
     size=sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
-    if size>MAX_SITE_BYTES:
+    if args.max_site_bytes and size>args.max_site_bytes:
         raise ValueError("Pages index exceeds GitHub Pages 1 GB limit: "+str(size)+
           ". Data must be moved to a separate indexed release/CDN before deploying.")
     print("PAGES INDEX READY",len(catalog),"pairs; bytes",size,flush=True)

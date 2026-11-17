@@ -11,6 +11,7 @@ import tempfile
 import time
 import urllib.request
 from release_changes import diff_plan, confirm_zip_changes
+from normalized_pack import GROUPS
 from pathlib import Path
 REPO="danilfg/dicts"
 OLD={"main":"data-20261116-093517","kaikki":"raw-kaikki-20261116-090335",
@@ -116,6 +117,40 @@ def validate(tag,assets,folder):
         if names&group:raise ValueError("Filename collision")
         names|=group
         groups[source]={"manifest":a,"assets":sorted(group),"version":m.get("version")}
+    # All non-source metadata is explicitly inventoried and checked.
+    if "REFRESH-REPORT.json" in assets:
+        report=doc("REFRESH-REPORT.json")
+        if report.get("version")!=tag:raise ValueError("Refresh report version mismatch")
+        names.add("REFRESH-REPORT.json")
+        notes=sorted(n for n in assets if n.startswith("retained--") and n.endswith(".json"))
+        for n in notes:
+            row=doc(n)
+            if not row.get("retained") or not row.get("reason"):raise ValueError("Bad retention record")
+            names.add(n)
+        groups["refresh"]={"assets":["REFRESH-REPORT.json"]+notes,"manifest":"REFRESH-REPORT.json"}
+    for group in GROUPS:
+        name=f"normalized--{group}-index.json"
+        if name not in assets:continue
+        index=doc(name)
+        if index["schema"]!=1 or index["group"]!=group or not index["members"]:raise ValueError("Invalid normalized group "+group)
+        group_names={name}
+        packs={p["name"]:p for p in index["packages"]}
+        if not packs:raise ValueError("Missing normalized packages "+group)
+        for n,p in packs.items():
+            if not n.startswith(f"normalized--{group}-") or not n.endswith(".zip"):raise ValueError("Invalid pack name")
+            check(n,p["sha256"],p["bytes"]);group_names.add(n)
+        for member,row in index["members"].items():
+            if member.startswith("/") or ".." in Path(member).parts or row["pack"] not in packs or row["bytes"]<=0 or not re.fullmatch(r"[0-9a-f]{64}",row["sha256"]):
+                raise ValueError("Invalid normalized member "+member)
+        if names&group_names:raise ValueError("Normalized name collision")
+        names|=group_names
+        groups["normalized-"+group]={"assets":sorted(group_names),"manifest":name}
+    if "LEXICAL-INDEX.json" in assets:
+        idx=doc("LEXICAL-INDEX.json")
+        if idx["version"]!=tag or set(idx["groups"])!=set(GROUPS):raise ValueError("Invalid master normalized index")
+        for group,item in idx["groups"].items():
+            check(item["index"],item["sha256"],item["bytes"])
+        names.add("LEXICAL-INDEX.json")
     if names!=set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}:
         raise ValueError("Unexpected/missing files: "+repr(sorted(names^(set(assets)-{"SHA256SUMS.txt","RELEASE-MANIFEST.json"}))[:20]))
     for name in names:check(name)
@@ -125,16 +160,21 @@ def finalize(tag):
     assets=inventory(tag)
     with tempfile.TemporaryDirectory() as tmp:
         folder=Path(tmp);groups=validate(tag,assets,folder)
-        previous=json.loads(gh("api",f"repos/{REPO}/releases/latest"))
-        if previous["tag_name"].startswith("v"):
-            changed,repacked=diff_plan(inventory(previous["tag_name"]),assets)
-            if not changed:
-                changed=confirm_zip_changes(previous["tag_name"],tag,repacked,REPO)
-            if not changed:
-                print("UNCHANGED: all eight source families match "+previous["tag_name"],flush=True)
-                gh("release","delete",tag,"-R",REPO,"--yes")
-                return
-            print("UPSTREAM CHANGES:", ", ".join(changed[:30]),flush=True)
+        report=json.loads((folder/"REFRESH-REPORT.json").read_text())
+        if not report.get("publish"):raise ValueError("Refusing unchanged draft")
+        groups_expected={"normalized-"+g for g in GROUPS}
+        if not groups_expected.issubset(groups):raise ValueError("Missing normalized groups")
+        idx={"schema":1,"version":tag,"groups":{},"format":"gzip-json-shards","download_base":f"https://github.com/{REPO}/releases/download/{tag}/"}
+        for group in GROUPS:
+            name=f"normalized--{group}-index.json"
+            idx["groups"][group]={"index":name,"bytes":assets[name]["size"],"sha256":digest(assets[name])}
+        idxfile=folder/"LEXICAL-INDEX.json"
+        idxfile.write_text(json.dumps(idx,indent=2)+"\n")
+        upload(tag,[idxfile])
+        assets=inventory(tag)
+        # Use a fresh directory because validate downloads manifests.
+        with tempfile.TemporaryDirectory() as fresh:
+            groups=validate(tag,assets,Path(fresh))
         entries=[{"name":n,"bytes":assets[n]["size"],"sha256":digest(assets[n])} for n in sorted(assets)]
         if len(entries)+2>1000:raise ValueError("Asset limit exceeded")
         master=folder/"RELEASE-MANIFEST.json"
@@ -159,8 +199,12 @@ All eight source families in a single version: KOReader, FreeDict, WikDict, Kaik
 - Bilingual ZIPs and compact indexes: individual files or BUNDLE-PARTS.json.
 - Full text corpora: kaikki-- and tatoeba--; join numbered parts in order.
 - WordNet and ConceptNet: oewn--, omw--, conceptnet-- and lexicon-- files.
+- [Normalized application indexes](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all eight sources; compact corpus/graph subsets).
+- [Source refresh report](https://github.com/{REPO}/releases/download/{tag}/REFRESH-REPORT.json) (exact changed assets and retained sources).
 - Preserve original licenses and source-specific attribution. Third-party data are not covered by the project MIT license.
 """
+        from release_plan import release_notes
+        notes+=release_notes(report)
         gh("release","edit",tag,"-R",REPO,"--draft=false","--latest","--title","Dicts "+tag,"--notes",notes)
         print("PUBLISHED",tag,len(final),"verified assets",flush=True)
 def main():

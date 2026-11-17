@@ -487,6 +487,10 @@ def main():
     save_enrichment(out)
     INDEX_DB.close()
     (out/"_enrich.sqlite3").unlink(missing_ok=True)
+    # Remove failed temporary outputs before uploading the candidate inventory.
+    published_names={a["name"] for a in ASSETS}
+    for path in out.glob("*.zip"):
+        if path.name not in published_names:path.unlink()
     for a in ASSETS:
         path=out/a["name"]
         if not path.exists() or sha256(path)!=a["sha256"]:
