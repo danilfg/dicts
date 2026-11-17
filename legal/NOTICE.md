@@ -35,3 +35,5 @@ The distributor **does not independently proofread or certify** the accuracy, co
 This disclaimer **does not** waive mandatory consumer/statutory rights or remove the maintainer's obligations to comply with applicable copyright, licensing, attribution, lawful redistribution and reasonable claims about technical integrity.
 
 This document is a good-faith rights disclosure, **not an attorney's legal opinion or a replacement for the original licenses**.
+
+Unified dated versions additionally include `RELEASE-MANIFEST.json`, release-wide `SHA256SUMS.txt`, and source-prefixed raw/lexical manifests and notices. This packaging change does not merge or replace individual data licenses.

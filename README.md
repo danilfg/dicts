@@ -10,7 +10,7 @@ Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates thir
 
 ## What is included?
 
-All eight source families are collected under this repository. **New dated versions consolidate all eight source families into one release.** The older source-specific snapshots remain accessible during migration.
+All eight source families are collected under this repository. **New dated versions consolidate all eight source families into one release.** The first unified release is published; older source-specific snapshots remain accessible for compatibility with pinned links.
 
 | Source | Contents | Download | License / attribution |
 |---|---|---|---|
@@ -40,7 +40,23 @@ For normal language-pair downloads use [Releases → Latest](https://github.com/
 
 For the **entire main dictionary collection**, use [BUNDLE-PARTS.json](https://github.com/danilfg/dicts/releases/latest/download/BUNDLE-PARTS.json) and download every listed `dicts-part-NNN.zip`, or `dicts-all.zip` when the collection fits in a single archive. These convenience bundles cover the bilingual collection. In unified versions the same release also contains full available raw corpora and WordNet/ConceptNet assets, separately named and individually downloadable.
 
-Each unified version includes `RELEASE-MANIFEST.json` (every asset, size, SHA-256, and source group), `SHA256SUMS.txt` (release-wide verification), bilingual `manifest.json`, `BUNDLE-PARTS.json`, and `THIRD-PARTY-NOTICES.md`. Raw manifests and attribution files have `kaikki--` or `tatoeba--` prefixes. Lexical manifests and notices have `oewn--`, `omw--` or `conceptnet--` prefixes. Older releases use their original naming conventions. The inventory provides the complete download list for developers.
+Each unified version includes [RELEASE-MANIFEST.json](https://github.com/danilfg/dicts/releases/latest/download/RELEASE-MANIFEST.json) (every asset, size, SHA-256, and source group), `SHA256SUMS.txt` (release-wide verification), bilingual `manifest.json`, `BUNDLE-PARTS.json`, and `THIRD-PARTY-NOTICES.md`. Raw manifests and attribution files have `kaikki--` or `tatoeba--` prefixes. Lexical manifests and notices have `oewn--`, `omw--` or `conceptnet--` prefixes. Older releases use their original naming conventions. The inventory provides the complete download list for developers.
+
+### Download a complete version
+
+To fetch every asset of the latest version with the GitHub CLI:
+
+```bash
+gh release download --repo danilfg/dicts --pattern '*' --dir dicts-data
+```
+
+For reproducible application builds, pin a dated version:
+
+```bash
+gh release download v2026.11.17.16.1 --repo danilfg/dicts --pattern '*' --dir dicts-data
+```
+
+This downloads the source files and convenience bundles (some data are duplicated in those bundles). To download only needed assets, use the exact names and hashes in RELEASE-MANIFEST.json. Original per-source data licenses apply. The GitHub-generated source-code ZIP/TAR downloads contain the repository code only, not the release datasets.
 
 ## Online dictionary search
 
