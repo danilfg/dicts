@@ -1,1 +1,1 @@
-2026-11-17: validate normalized release pipeline, universal source fallback, and conditional upstream downloads.
+2026-11-17: initialize and validate public GHCR OCI pair-selective release pipeline.
