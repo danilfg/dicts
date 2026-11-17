@@ -37,6 +37,28 @@ jobs:
           python -m compileall -q src tests
           python -m unittest discover -s tests -v
           node --test tests/test_entry_format.cjs
+      - name: Check available GitHub REST API budget
+        timeout-minutes: 70
+        shell: bash
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + 3900 ))
+          while true; do
+            read -r remaining reset <<< "$(gh api rate_limit --jq '.resources.core | [.remaining,.reset] | @tsv')"
+            [[ "$remaining" =~ ^[0-9]+$ && "$reset" =~ ^[0-9]+$ ]]
+            echo "GitHub REST API: remaining=$remaining, reset=$(date -u -d "@$reset" +%FT%TZ)"
+            if (( remaining >= 700 )); then break; fi
+            now=$(date +%s)
+            if (( now >= deadline )); then
+              echo "::error::Insufficient REST API quota after bounded wait"
+              exit 1
+            fi
+            delay=$(( reset - now + 10 ))
+            if (( delay < 15 )); then delay=15; fi
+            if (( now + delay > deadline )); then delay=$(( deadline - now )); fi
+            echo "Waiting for the existing API quota window to reset ($delay seconds)."
+            sleep "$delay"
+          done
       - name: Check anonymous access (initialize package if needed)
         run: python src/storage.py probe
       - id: setup

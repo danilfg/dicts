@@ -1,1 +1,1 @@
-2026-11-17: verify OCI migration after deterministic ZIP timestamp fix.
+2026-11-17: rerun OCI migration after REST API quota regression fix and preflight budget check.
