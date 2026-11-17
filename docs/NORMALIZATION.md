@@ -36,6 +36,10 @@ Bilingual articles retain readable text (including semicolons and line breaks) b
 
 Release metadata is immutable after publication. Data files are stored in **`ghcr.io/danilfg/dicts-data`**. A package is OCI data (not a Docker image to run). A logical file is an OCI layer; OCI manifests retain the layer references. Release receipts (`oci--*.json`) list the files, manifest digests and content hashes. Original source files and convenience bundles use the same transport. Do not delete package versions referenced by any release.
 
+### Registry collection aliases
+
+`ghcr.io/danilfg/dicts-data:latest` and the exact dated release tag (for example `v2026.11.17.25.1`) point to the same verified OCI catalog manifest for the current public release. The catalog includes the master and pair indexes, full inventory, checksums, report and licensing metadata. It does not contain all dictionary bytes; follow the pair index to download individual blocks. Internal batch tags are not application entry points. Use `oras pull ghcr.io/danilfg/dicts-data:latest -o dicts-catalog` to obtain the metadata without a Docker daemon. The monthly workflow promotes the aliases after successful release publication. Its optional `catalog_only` mode repairs the current aliases without rebuilding any data.
+
 ### Step 1 — discover and pin
 
 Fetch `https://github.com/danilfg/dicts/releases/latest/download/LEXICAL-INDEX.json`. Require schema 1, format `oci-pair-v1`, expected registry and pinned download base. Example (synthetic digest and byte count):

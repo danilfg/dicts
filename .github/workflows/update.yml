@@ -2,8 +2,13 @@ name: Update all dictionary sources
 on:
   push:
     branches: [main]
-    paths: [.github/update-request]
+    paths: [.github/update-request, .github/catalog-request]
   workflow_dispatch:
+    inputs:
+      catalog_only:
+        description: Republish catalog aliases for the latest published release (no dictionaries rebuilt)
+        type: boolean
+        default: false
   schedule:
     - cron: '17 4 1 * *'
 permissions:
@@ -16,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare:
-    if: github.repository == 'danilfg/dicts' && github.ref == 'refs/heads/main'
+    if: github.repository == 'danilfg/dicts' && github.ref == 'refs/heads/main' && !((github.event_name == 'workflow_dispatch' && inputs.catalog_only) || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'catalog-only:')))
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.setup.outputs.tag }}
@@ -196,6 +201,34 @@ jobs:
       - name: Publish source licensing metadata
         run: python src/storage.py upload --tag "$TAG" legal/SOURCES.json legal/NOTICE.md LICENSE
       - run: python src/unified_release.py finalize --tag "$TAG"
+
+  catalog:
+    needs: [prepare, publish]
+    if: ${{ always() && !cancelled() && github.repository == 'danilfg/dicts' && github.ref == 'refs/heads/main' && (needs.publish.result == 'success' || ((github.event_name == 'workflow_dispatch' && inputs.catalog_only) || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'catalog-only:')))) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: ./.github/actions/oci
+        with:
+          token: ${{ github.token }}
+          actor: ${{ github.actor }}
+      - name: Publish and verify versioned catalog and latest OCI alias
+        run: |
+          if [[ -n "$TAG" ]]; then
+            python src/publish_catalog.py --tag "$TAG"
+          else
+            python src/publish_catalog.py
+          fi
 
   pages:
     needs: [prepare, publish]
