@@ -292,28 +292,18 @@ def finish(dir,state):
     notices.write_text("\n".join(lines),encoding="utf8")
 def publish(dir,state,tag):
     if os.environ.get("GITHUB_REPOSITORY")!=REPO:raise ValueError("Refusing foreign repo")
-    title=f"{state['source']} lexical snapshot — {state['version']}"
-    body="Third-party dictionary/graph resources. Read LEXICAL-MANIFEST.json and THIRD-PARTY-LEXICAL-NOTICES.md; license terms differ among data sources."
-    gh("release","create",tag,"-R",REPO,"--draft","--latest=false","--title",title,"--notes",body)
+    for name in ("LEXICAL-MANIFEST.json","THIRD-PARTY-LEXICAL-NOTICES.md"):
+        (dir/name).rename(dir/(state["source"]+"--"+name))
     names=[p for p in sorted(dir.iterdir()) if p.is_file()]
     if len(names)>1000:raise ValueError("GitHub release asset limit exceeded")
     for i in range(0,len(names),10):
         gh("release","upload",tag,*map(str,names[i:i+10]),"-R",REPO,"--clobber")
-    listed=json.loads(gh("release","view",tag,"-R",REPO,"--json","assets"))
-    if len(listed["assets"])!=len(names):raise ValueError("Release asset count mismatch")
-    gh("release","edit",tag,"-R",REPO,"--draft=false","--latest=false")
-    print("PUBLISHED "+f"https://github.com/{REPO}/releases/tag/{tag}",flush=True)
+    print("STAGED "+state["source"]+" in "+tag,flush=True)
 def main():
     p=argparse.ArgumentParser();p.add_argument("--source",choices=tuple(SOURCES),required=True)
     args=p.parse_args()
     if os.getenv("GITHUB_REPOSITORY")!=REPO:raise ValueError("Expected GitHub repository "+REPO)
-    version=upstream_release(SOURCES[args.source]["repo"])["tag_name"] if args.source!="conceptnet" else "5.7.0"
-    tag=f"lex-{args.source}-{version}-v1"
-    try:
-        previous=json.loads(gh("release","view",tag,"-R",REPO,"--json","isDraft,assets"))
-        if not previous.get("isDraft") and any(a["name"]=="LEXICAL-MANIFEST.json" for a in previous.get("assets",[])):
-            print("UP-TO-DATE "+tag+" (existing verified publication)",flush=True);return
-    except RuntimeError:pass
+    tag=os.environ["UNIFIED_RELEASE_TAG"]
     state={"schema":1,"source":args.source,"publisher":REPO,
             "generated_at":dt.datetime.now(dt.timezone.utc).isoformat(),
             "assets":[],"versions":{},"license_registry":SOURCES,"status":"complete"}

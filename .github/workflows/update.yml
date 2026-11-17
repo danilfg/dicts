@@ -4,18 +4,14 @@ on:
     branches: [main]
     paths:
       - .github/workflows/update.yml
-      - src/build.py
-      - configs/sources.json
-      - legal/SOURCES.json
-      - src/mirror_raw.py
-      - src/sync_lexical.py
+      - src/unified_release.py
   workflow_dispatch:
     inputs:
       mode:
-        description: "all = KOReader plus extras; core = verified KOReader only"
+        description: "all = refresh upstream; consolidate = migrate existing verified legacy snapshot"
         type: choice
         required: true
-        options: [all, core]
+        options: [all, consolidate]
         default: all
   schedule:
     - cron: '0 4 1 * *'
@@ -23,15 +19,67 @@ permissions:
   contents: write
 concurrency:
   group: update-dicts
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
-  build-and-release:
+  prepare:
     if: github.repository == 'danilfg/dicts'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.setup.outputs.tag }}
+      mode: ${{ steps.setup.outputs.mode }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ inputs.mode || 'all' }}
+    steps:
+      - id: setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          if [[ "$GITHUB_EVENT_NAME" == push && "$latest" != v* ]]; then MODE=consolidate; fi
+          if [[ "$MODE" == consolidate && "$latest" == v* ]]; then
+            echo "::error::Migration already completed; use all"; exit 1
+          fi
+          tag="v$(date -u +'%Y.%m.%d').$GITHUB_RUN_NUMBER.$GITHUB_RUN_ATTEMPT"
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --latest=false --title "Dicts $tag" --notes "Draft until all eight source inventories pass."
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+  migrate:
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'consolidate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {source: main, partition: 0, partitions: 4}
+          - {source: main, partition: 1, partitions: 4}
+          - {source: main, partition: 2, partitions: 4}
+          - {source: main, partition: 3, partitions: 4}
+          - {source: kaikki, partition: 0, partitions: 1}
+          - {source: tatoeba, partition: 0, partitions: 1}
+          - {source: oewn, partition: 0, partitions: 1}
+          - {source: omw, partition: 0, partitions: 1}
+          - {source: conceptnet, partition: 0, partitions: 1}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python src/unified_release.py migrate --tag "$TAG" --source ${{ matrix.source }} --partition ${{ matrix.partition }} --partitions ${{ matrix.partitions }}
+  build-and-release:
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
-      MODE: ${{ inputs.mode || 'all' }}
+      MODE: all
+      UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -91,49 +139,14 @@ jobs:
           python src/package_release.py --dist dist
           test -s dist/BUNDLE-PARTS.json
           test -s dist/SHA256SUMS.txt
-      - name: Check whether content has changed
-        id: change
-        shell: bash
+      - name: Stage main dictionaries in shared draft
         run: |
-          set -euo pipefail
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          mkdir -p previous
-          if gh release download --repo "$GITHUB_REPOSITORY" \
-               --pattern manifest.json --dir previous >/dev/null 2>&1; then
-            if python - <<'PY'
-          import json
-          old=json.load(open('previous/manifest.json'))
-          new=json.load(open('dist/manifest.json'))
-          signature=lambda x: sorted((a['name'],a['sha256']) for a in x['assets'])
-          raise SystemExit(0 if signature(old)==signature(new) and old.get('bundle_format')==new.get('bundle_format') else 1)
-          PY
-            then
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-              echo "No content changes since latest release."
-            fi
-          fi
-      - name: Publish independently licensed snapshot
-        if: steps.change.outputs.changed == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          count="$(find dist -maxdepth 1 -type f | wc -l | tr -d ' ')"
-          test "$count" -le 1000
-          find dist -maxdepth 1 -type f -size +1900M -print -quit | \
-            { read -r big && { echo "::error::Too large: $big"; exit 1; } || true; }
-          tag="data-$(date -u +'%Y%m%d-%H%M%S')"
-          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --draft \
-            --title "Dicts licensed snapshot $tag" \
-            --notes "Independent licensed packages; review manifest.json and THIRD-PARTY-NOTICES.md for exact source coverage and per-asset rights."
-          gh release upload "$tag" dist/* --repo "$GITHUB_REPOSITORY" --clobber
-          actual="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
-            --json assets --jq '.assets | length')"
-          test "$actual" -eq "$count"
-          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
-          echo "Release published: https://github.com/$GITHUB_REPOSITORY/releases/tag/$tag"
+          rm -f dist/SHA256SUMS.txt
+          gh release upload "$UNIFIED_RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY"
 
   raw-text-corpora:
-    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'all')
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -142,6 +155,7 @@ jobs:
         source: [kaikki, tatoeba]
     env:
       GH_TOKEN: ${{ github.token }}
+      UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -150,12 +164,13 @@ jobs:
       - name: Validate full source discovery
         run: |
           python -m unittest discover -s tests -v
-      - name: Publish all available upstream text archives, preserving licenses
+      - name: Stage all available upstream text archives, preserving licenses
         run: |
           python src/mirror_raw.py --source ${{ matrix.source }}
 
   lexical-resources:
-    if: github.repository == 'danilfg/dicts' && (github.event_name != 'workflow_dispatch' || inputs.mode == 'all')
+    needs: prepare
+    if: needs.prepare.outputs.mode == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
@@ -164,6 +179,7 @@ jobs:
         source: [oewn, omw, conceptnet]
     env:
       GH_TOKEN: ${{ github.token }}
+      UNIFIED_RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -173,5 +189,34 @@ jobs:
         run: |
           python -m compileall -q src
           python -m unittest discover -s tests -v
-      - name: Mirror and publish independent lexical sources in own Releases
+      - name: Stage lexical sources in shared draft
         run: python src/sync_lexical.py --source ${{ matrix.source }}
+
+
+  publish:
+    needs: [prepare, migrate, build-and-release, raw-text-corpora, lexical-resources]
+    if: always() && needs.prepare.result == 'success' && ((needs.prepare.outputs.mode == 'consolidate' && needs.migrate.result == 'success') || (needs.prepare.outputs.mode == 'all' && needs.build-and-release.result == 'success' && needs.raw-text-corpora.result == 'success' && needs.lexical-resources.result == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python src/unified_release.py finalize --tag "$TAG"
+  cleanup-incomplete:
+    needs: [prepare, publish]
+    if: always() && needs.prepare.result == 'success' && needs.publish.result != 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - name: Remove only this failed run's draft
+        run: |
+          if [[ "$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" == true ]]; then
+            gh release delete "$TAG" -R "$GITHUB_REPOSITORY" --yes
+          fi

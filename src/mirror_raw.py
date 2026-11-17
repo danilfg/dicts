@@ -130,10 +130,7 @@ def main():
     owner=os.getenv("GITHUB_REPOSITORY","")
     if owner!="danilfg/dicts":raise ValueError("Refusing to publish to a foreign repository")
     discovered=discover(source)
-    tag=f"raw-{source}-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M%S}"
-    gh("release","create",tag,"-R",owner,"--draft","--latest=false",
-       "--title",f"Full {source} text sources, partitioned ({tag})",
-       "--notes","Original data and licenses belong to upstream licensors; see SOURCE-MANIFEST.json in this release.")
+    tag=os.environ["UNIFIED_RELEASE_TAG"]
     report={"schema":1,"source":source,"created":dt.datetime.now(dt.timezone.utc).isoformat(),
         "source_index":KAikki_INDEX if source=="kaikki" else TATOEBA_INDEX,
         "full_text_archive":True,"excluded":["media","audio","template dumps","non-dictionary logs"],
@@ -145,14 +142,13 @@ def main():
             mirror_one(url,label,tag,report["sources"])
         report["status"]="complete" if len(report["sources"])==len(discovered) else "incomplete"
         if report["status"]!="complete":raise ValueError("Not all discovered files were mirrored")
-        doc=Path(d)/"SOURCE-MANIFEST.json"
+        doc=Path(d)/(source+"--SOURCE-MANIFEST.json")
         doc.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
-        legal=Path(d)/"ATTRIBUTION-AND-LICENSE.txt"
+        legal=Path(d)/(source+"--ATTRIBUTION-AND-LICENSE.txt")
         legal.write_text(json.dumps(report["licenses"],ensure_ascii=False,indent=2)+
             "\nOriginal URLs and SHA-256: SOURCE-MANIFEST.json\n"+
             "No guarantee of translation quality or content correctness.\n")
         gh("release","upload",tag,str(doc),str(legal),"-R",owner,"--clobber")
-    gh("release","edit",tag,"-R",owner,"--draft=false","--latest=false")
     print(f"RAW SOURCE COMPLETE: https://github.com/{owner}/releases/tag/{tag}",flush=True)
 
 if __name__=="__main__":main()
