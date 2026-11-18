@@ -80,12 +80,12 @@ function parseEntry(input,from,to){
   return lines.map(line=>parseLine(line,from,to)).filter(Boolean);
 }
 const RUSSIAN_FORMS={
-  entries:["запись","записи","записей"],
+  entries:["запись","записи","записей"],translations:["перевод","перевода","переводов"],
   meanings:["значение","значения","значений"],
   sourceCount:["источник","источника","источников"],
   examples:["пример","примера","примеров"]
 };
-const ENGLISH_FORMS={entries:["entry","entries"],meanings:["meaning","meanings"],sourceCount:["source","sources"],examples:["example","examples"]};
+const ENGLISH_FORMS={entries:["entry","entries"],translations:["translation","translations"],meanings:["meaning","meanings"],sourceCount:["source","sources"],examples:["example","examples"]};
 function formatCount(count,type,locale="en"){
   const n=Math.max(0,Math.trunc(Number(count)||0));
   if(locale==="ru"&&RUSSIAN_FORMS[type]){

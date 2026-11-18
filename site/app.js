@@ -91,127 +91,12 @@ async function getShard(pair,bucketNum){
  state.cache.set(key,decoded);
  return decoded;
 }
-function sourceInfo(pair,id){return (state.catalog.provenance[pair]||{})[id]||{}}
+
 function countLabel(count,type){
  return window.DictsEntryFormat
    ?window.DictsEntryFormat.formatCount(count,type,state.locale)
    :count+" "+t(type);
 }
-function summaryCard(title,count,id){
- const card=el("details","dictionary-card");card.open=false;
- const summary=el("summary");
- const icon=el("span","source-avatar",id==="koreader"?"K":id==="freedict"?"F":id==="wikdict"?"W":id==="kaikki"?"K":id==="oewn"?"O":id==="omw"?"M":id==="conceptnet"?"C":"T");icon.dataset.source=id;
- const heading=el("span","source-title");heading.append(el("b","",title),el("small","",countLabel(count,"entries")));
- summary.append(icon,heading,el("span","chevron","⌄"));card.append(summary);
- const body=el("div","source-body");card.append(body);
- return {card,body};
-}
-function sourceFooter(body,info){
- const foot=el("div","source-footer");
- if(info.license)foot.append(el("span","",t("license")+": "+info.license));
- if(info.source_url)foot.append(anchor(t("source")+" ↗",info.source_url));
- if(info.download_url)foot.append(anchor(t("download")+" ↗",info.download_url));
- body.append(foot);
- if(info.attribution){
-   const details=el("details","entry-credit");const sum=el("summary","",t("credit"));details.append(sum,el("p","",info.attribution));body.append(details)
- }
-}
-function addFormattedArticle(container,original,from,to){
- const format=window.DictsEntryFormat;
- if(!format){container.append(el("div","article-raw",String(original||"")));return}
- const lines=format.parseEntry(original,from,to);
- const article=el("div","dictionary-article");
- const more=el("details","article-more");
- const rest=el("div","article-rest");
- more.append(el("summary","",state.locale==="ru"?"Показать всю статью":"Show full article"),rest);
- for(const [index,line] of lines.entries()){
-    const destination=index<5?article:rest;
-    if(line.kind==="phonetic"){
-      const p=el("div","article-phonetic");
-      p.append(el("span","ipa-label",state.locale==="ru"?"Транскрипция":"Pronunciation"));
-      const chips=el("div","ipa-variants");
-      const variants=format.phoneticVariants(line.text);
-      for(const variant of variants)chips.append(el("span","ipa-variant",variant));
-      p.append(chips);destination.append(p);continue
-    }
-    if(line.kind==="part"){
-      destination.append(el("div","article-part",line.text));continue
-    }
-    const row=el("div","article-line");
-    if(line.number)row.append(el("span","article-number",line.number));
-    if(line.part)row.append(el("span","article-part",line.part));
-    const detail=el("div","article-detail");
-    if(line.kind==="sense"){
-      detail.append(el("div","article-translation",line.translation));
-      detail.append(el("div","article-explanation",line.explanation));
-    }else{
-      detail.append(el("div",line.kind==="translation"?"article-translation":line.kind==="explanation"?"article-explanation":"article-raw",line.text))
-    }
-    row.append(detail);destination.append(row);
- }
- if(rest.childNodes.length)article.append(more);
- container.append(article);
-}
-function renderTranslations(word,pair,entry){
- let firstTranslationCard=true;
- const fragment=document.createDocumentFragment();
- let sourceCount=0,total=0;
- for(const id of Object.keys(entry.translations||{})){
-   const entries=(entry.translations||{})[id]||[];
-   if(!entries.length)continue;
-   sourceCount++;
-   const {card,body}=summaryCard(SOURCE_NAMES[id]||id,entries.length,id);
-   if(firstTranslationCard){card.open=true;firstTranslationCard=false;}
-   const extra=el("details","article-more");const extraBody=el("div","article-rest");extra.append(el("summary","",state.locale==="ru"?"Другие статьи":"More articles"),extraBody);
-   for(const [index,meaning] of entries.entries()){
-      if(typeof meaning!=="string"||!meaning.trim())continue;
-      const div=el("div","definition");
-      addFormattedArticle(div,meaning,pair.split("-")[0],pair.split("-")[1]);
-      (index<2?body:extraBody).append(div);total++;
-   }
-   if(extraBody.childNodes.length)body.append(extra);
-   sourceFooter(body,sourceInfo(pair,id));fragment.append(card)
- }
- const meanings=(entry.meanings||[]).filter(x=>x&&x.text);
- if(meanings.length){
-   const types=new Map();
-   for(const m of meanings){const source=m.source||"kaikki";if(!types.has(source))types.set(source,[]);types.get(source).push(m)}
-   for(const [source,items] of types){
-     const {card,body}=summaryCard(source==="kaikki"?"Kaikki / Wiktionary":source,items.length,source);
-     for(const m of items){
-        const div=el("div","definition");addFormattedArticle(div,m.text,pair.split("-")[0],pair.split("-")[1]);
-        if(m.source_url){div.append(el("div","entry-credit")).append(anchor(t("source")+" ↗",m.source_url))}
-        body.append(div);
-     }
-     fragment.append(card);sourceCount++;
-   }
- }
- const examples=(entry.examples||[]).filter(x=>x&&x.text);
- if(examples.length){
-    const {card,body}=summaryCard("Tatoeba · "+t("sentences"),examples.length,"tatoeba");
-    for(const example of examples){
-      const d=el("div","definition");d.append(el("div","example-text",example.text));
-      if(example.translation)d.append(el("div","example-translation",example.translation));
-      const credit=el("div","example-author");
-      const parts=[];
-      const author=window.DictsEntryFormat?.cleanCredit(example.author)||"";
-      if(author)parts.push(document.createTextNode(author));
-      if(example.source_url)parts.push(anchor(t("source")+" ↗",example.source_url));
-      if(example.license)parts.push(document.createTextNode(example.license));
-      for(const [index,item] of parts.entries()){
-        if(index>0)credit.append(document.createTextNode(" · "));
-        credit.append(item);
-      }
-      if(parts.length)d.append(credit);
-      body.append(d);
-    }
-    fragment.append(card);sourceCount++;
- }
- return {fragment,sourceCount,total:total+meanings.length,examples:examples.length}
-}
-/* Optional semantic sources: independent of bilingual translations and safely
-   rendered only after matching published, source-labelled lookup data. */
-const LEXICAL_NAMES={oewn:"Open English WordNet",omw:"Open Multilingual Wordnet",conceptnet:"ConceptNet"};
 let lexicalCatalogPromise=null;
 async function getLexicalCatalog(){
  if(!lexicalCatalogPromise){
@@ -235,79 +120,12 @@ async function lookupLexical(source,language,word){
  if(content.source!==source||content.language!==language||!content.words)return null;
  return {entry:content.words[word],meta:metadata};
 }
-function addLexicalRecords(container,source,result,from,to){
- const data=source==="conceptnet"&&Array.isArray(result.entry)?result.entry.filter(x=>!x.language||x.language===from||x.language===to):result.entry;
- const fragment=document.createDocumentFragment();
- const addSubtitle=(label)=>{
-   const labelElement=el("div","lexical-subtitle",label);fragment.append(labelElement);
- };
- if(source==="conceptnet"){
-   if(!Array.isArray(data)||!data.length)return false;
-   for(const [relation,relations] of Object.entries(Object.groupBy?Object.groupBy(data,x=>x.relation):
-     data.reduce((obj,x)=>{(obj[x.relation]??=[]).push(x);return obj;},{}))){
-      const section=el("div","lexical-relation");
-      section.append(el("span","lexical-rel-name",relation.replace(/([a-z])([A-Z])/g,"$1 $2")));
-      const tags=el("div","lexical-tags");
-      for(const item of relations.slice(0,12)){
-        const lang=item.language||"";
-        tags.append(el("span","lexical-tag",item.word+(lang?" · "+lang.toUpperCase():"")));
-      }
-      section.append(tags);fragment.append(section);
-   }
- }else{
-   const definitions=Array.isArray(data.definitions)?data.definitions.filter(Boolean):[];
-   const synonyms=Array.isArray(data.synonyms)?data.synonyms.filter(Boolean):[];
-   if(definitions.length){
-     addSubtitle(state.locale==="ru"?"Определения":"Definitions");
-     const list=el("div","lexical-definitions");
-     for(const def of definitions.slice(0,8))list.append(el("div","lexical-definition",def));
-     fragment.append(list);
-   }
-   if(synonyms.length){
-     addSubtitle(state.locale==="ru"?"Синонимы и связанные слова":"Synonyms and related words");
-     const tags=el("div","lexical-tags");
-     for(const term of synonyms.slice(0,25))tags.append(el("span","lexical-tag",term));
-     fragment.append(tags);
-   }
- }
- if(!fragment.childNodes.length)return false;
- container.append(fragment);
- return true;
-}
-async function renderLexical(word,sourceLanguage,requestId,targetLanguage){
+async function getLexicalRecords(word,sourceLanguage){
  const catalog=await getLexicalCatalog();
- if(!catalog||requestId!==state.searchNumber)return;
- const sources=Object.keys(catalog.sources||{}).filter(id=>
-   catalog.sources?.[id]?.languages?.some(item=>item.language===sourceLanguage));
- if(!sources.length)return;
+ const sources=Object.keys(catalog?.sources||{}).filter(id=>
+   catalog.sources[id]?.languages?.some(item=>item.language===sourceLanguage));
  const looked=await Promise.allSettled(sources.map(src=>lookupLexical(src,sourceLanguage,word)));
- if(requestId!==state.searchNumber)return;
- let cards=0;
- const section=el("section","lexical-block");
- const header=el("div","lexical-heading",state.locale==="ru"?"ОПРЕДЕЛЕНИЯ И СМЫСЛОВЫЕ СВЯЗИ":"DEFINITIONS & SEMANTIC RELATIONS");
- section.append(header);
- for(const [i,result] of looked.entries()){
-   if(result.status!=="fulfilled"||!result.value?.entry)continue;
-   const source=sources[i],info=result.value.meta;
-   const {card,body}=summaryCard(LEXICAL_NAMES[source],1,source);
-   card.classList.add("semantic-card");
-   const intro=el("div","semantic-note",
-     source==="conceptnet"
-     ?(state.locale==="ru"?"Связанные понятия — не прямые переводы":"Related concepts — not literal translations")
-     :(state.locale==="ru"?"Определения и лексические связи — не прямые переводы":"Definitions and lexical connections — not translations"));
-   body.append(intro);
-   if(!addLexicalRecords(body,source,result.value,sourceLanguage,targetLanguage))continue;
-   sourceFooter(body,{license:info.license,source_url:info.source_url,download_url:info.release_url,
-                      attribution:info.title+"; original contributors and rightsholders"});
-   section.append(card);
-   cards++;
- }
- if(cards){
-   // Add semantic information *after* translations and examples.
-   const root=$("results");
-   if(root.querySelector(".no-results"))root.replaceChildren(el("h2","semantic-only-heading",word),el("p","semantic-note",state.locale==="ru"?"Прямой перевод не найден. Доступны смысловые данные.":"No direct translation found. Semantic data are available."));
-   root.append(section);
- }
+ return looked.flatMap((result,i)=>result.status==="fulfilled"&&result.value?.entry?[{source:sources[i],...result.value}]:[]);
 }
 function render(word,pair,entry,metadata){
  const target=$("results");target.replaceChildren();
@@ -320,16 +138,21 @@ function render(word,pair,entry,metadata){
  const copy=el("button","circle-action","⧉");copy.type="button";copy.title=t("copy");copy.setAttribute("aria-label",t("copy"));
  copy.addEventListener("click",()=>navigator.clipboard?.writeText(location.href).then(()=>setStatus(t("copy")+" ✓")));
  buttons.append(speak,copy);heading.append(left,buttons);target.append(heading);
- const content=renderTranslations(word,pair,entry);
- const badges=el("div","result-summary");
- badges.append(el("span","count-pill",countLabel(content.sourceCount,"sourceCount")),el("span","count-pill",countLabel(content.total,"entries")));
- if(content.examples)badges.append(el("span","count-pill",countLabel(content.examples,"examples")));
- target.append(badges,content.fragment);
+ const badges=el("div","result-summary"),body=el("div","dictionary-result");
+ target.append(badges,body);
+ const update=lexical=>{
+   const data=window.DictsResultModel.adapt(pair,entry||{},lexical,state.catalog.provenance?.[pair]||{});
+   const prepared=window.LWC_DICTIONARY_VIEW.render(body,data,{language:state.locale,primaryCount:2});
+   badges.replaceChildren(el("span","count-pill",countLabel(window.DictsResultModel.sourceCount(data),"sourceCount")),
+     el("span","count-pill",countLabel(prepared.translations.length,"translations")));
+   if(prepared.examples.length)badges.append(el("span","count-pill",countLabel(prepared.examples.length,"examples")));
+ };
+ return update;
 }
 async function search(){
  if(!state.catalog)return;
  const raw=$("term").value.trim();
- if(!raw){emptyResult(t("emptyTitle"),t("emptyDescription"));return}
+ if(!raw){++state.searchNumber;$("search-btn").disabled=false;setStatus("");emptyResult(t("emptyTitle"),t("emptyDescription"));return}
  const word=normalize(raw);const pair=pairValue();
  const metadata=state.byPair.get(pair);
  if(!metadata){setStatus(t("noPairs"),"error");return}
@@ -338,14 +161,21 @@ async function search(){
  $("search-btn").disabled=true;
  updateAddress(raw);
  try{
+   // Independent lexical indexes load in parallel, without blocking the first translations.
+   const lexicalPromise=getLexicalRecords(word,metadata.from).catch(error=>{console.warn("Semantic lookup unavailable:",error);return []});
    const shard=await shaBucket(word,metadata.buckets);
    const payload=await getShard(pair,shard);
    if(request!==state.searchNumber)return;
    const entry=payload.words[word];
-   if(entry){render(raw,pair,entry,metadata);setStatus("")}
-   else{emptyResult(t("notFound"),t("notFoundDetail"));setStatus("")}
-   // Look up independent lexical/semantic networks, never relabelled as translation.
-   renderLexical(word,metadata.from,request,metadata.to).catch(error=>console.warn("Semantic lookup unavailable:",error));
+   let update;
+   if(entry){update=render(raw,pair,entry,metadata);update([])}
+   else emptyResult(t("notFound"),t("notFoundDetail"));
+   setStatus("");
+   lexicalPromise.then(lexical=>{
+     if(request!==state.searchNumber||!lexical.length)return;
+     if(!update)update=render(raw,pair,entry,metadata);
+     update(lexical);
+   }).catch(error=>console.warn("Semantic rendering unavailable:",error));
  }catch(err){
    if(request!==state.searchNumber)return;
    console.error("Lookup error",err);
