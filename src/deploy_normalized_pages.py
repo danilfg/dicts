@@ -22,6 +22,8 @@ def run(tag,site):
     pair=site/"data/catalog.json"
     lexical=site/"data/lexical/catalog.json"
     if not pair.is_file() or not lexical.is_file():raise ValueError("Missing public indexes")
+    from build_source_directory import run as build_directory
+    build_directory(tag,site)
     size=sum(p.stat().st_size for p in site.rglob("*") if p.is_file())
     if size>=1_000_000_000:raise ValueError("Pages deployment exceeds 1 GB")
     if not json.loads(pair.read_text())["pairs"]:raise ValueError("Empty pair catalog")

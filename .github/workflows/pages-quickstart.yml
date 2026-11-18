@@ -6,12 +6,16 @@ on:
     paths:
       - .github/workflows/pages-quickstart.yml
       - site/**
-      - src/refresh_pages_data.py
+      - src/deploy_normalized_pages.py
+      - src/build_source_directory.py
+      - tests/test_source_directory.py
+      - tests/test_site_ui.cjs
       - tests/test_entry_format.cjs
   workflow_dispatch:
 
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 
@@ -23,23 +27,28 @@ jobs:
   build:
     if: github.repository == 'danilfg/dicts'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: ./.github/actions/oci
       - name: Verify JavaScript, formatting and build tests
         run: |
           set -euo pipefail
           node --check site/app.js
           node --check site/entry-format.js
-          node --test tests/test_entry_format.cjs
+          node --test tests/test_entry_format.cjs tests/test_site_ui.cjs
           python -m unittest discover -s tests -v
-      - name: Reuse all existing published search shards without GitHub API calls
+      - name: Extract verified Pages packs and version metadata from the current release
         run: |
-          python src/refresh_pages_data.py --site-dir site
-          test -s site/data/catalog.json
+          set -euo pipefail
+          tag="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          python src/deploy_normalized_pages.py --tag "$tag" --site-dir site
+          test -s site/data/sources.json
           du -sh site
       - uses: actions/upload-pages-artifact@v3
         with:

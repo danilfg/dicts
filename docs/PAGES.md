@@ -81,3 +81,7 @@ and redistribution obligations see [legal/NOTICE.md](../legal/NOTICE.md).
 ## Unified release pipeline
 
 The monthly update workflow now stages sources (retaining verified prior data when upstream fails), creates normalized release packs, validates them, publishes, and invokes the Pages reusable workflow. Pages downloads only the prepared `pages` and `pages-lexical` groups, verifies hashes and extracts them. The full application indexes are separately available in Releases and are not subject to the Pages 1 GB site cap. Manual Pages deployment is for recovery after a successful normalized release.
+
+## Compact translator and dictionary directory
+
+The Pages UI uses the midnight/mint palette of Learn Words with Cards. Translator and Dictionaries are separate hash routes. Dictionary details are collapsed by default except the first matching bilingual source; full entries remain expandable. The directory reads `data/sources.json`, generated from the pinned release's verified source manifests and licensing registry. Upstream versions are shown only when provided; untaged dumps show their manifest date and the retention status. UI-only deployments extract the existing verified Pages OCI packs and metadata, without downloading upstream sources or regenerating the release.

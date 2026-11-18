@@ -34,7 +34,8 @@ jobs:
           tag="$REQUESTED_TAG"
           if [[ -z "$tag" ]]; then tag="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"; fi
           python src/deploy_normalized_pages.py --tag "$tag" --site-dir site
-          node --test tests/test_entry_format.cjs
+          node --test tests/test_entry_format.cjs tests/test_site_ui.cjs
+          python -m unittest discover -s tests -p test_source_directory.py -v
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
