@@ -43,3 +43,5 @@
 .dictionary-result .lwc-mini-providers a:hover{color:var(--mint)!important}
 .dictionary-result .lwc-dicts-credit{display:block;margin:8px 0;font-size:11px;color:var(--muted)}
 .dictionary-result .lwc-raw-article{white-space:pre-wrap}
+
+select.locale-btn{font:inherit;max-width:165px;background:#101a2b;color:#eaf3ff;cursor:pointer}select.locale-btn option{background:#101a2b;color:#eaf3ff}

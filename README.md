@@ -1,5 +1,7 @@
 # Dicts — Open Multilingual Dictionary Aggregator
 
+[**LingoInView — language learning extension**](https://danilfg.github.io/dicts/lingoinview/) · [Privacy Policy](https://danilfg.github.io/dicts/lingoinview/privacy.html)
+
 **One independent GitHub collection of offline bilingual dictionaries, definitions, WordNets, example sentences and semantic knowledge.**
 
 Dicts is maintained by [danilfg](https://github.com/danilfg). It aggregates third-party data with source and licensing information, checks published files and offers versioned catalogs through [GitHub Releases](https://github.com/danilfg/dicts/releases). The verified main collection includes **806 bilingual dictionary archives**: 74 KOReader, 305 FreeDict and 427 WikDict. These are **package counts, not unique language-pair counts**. Additionally, ConceptNet's upstream semantic graph covers 304 languages with very different levels of vocabulary coverage; that does **not** mean there are 304 complete translation dictionaries.
