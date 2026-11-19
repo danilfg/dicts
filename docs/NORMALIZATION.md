@@ -358,5 +358,12 @@ The source data retain their own licenses and attribution.
 
 The reverse index is bounded and heuristic, not exhaustive; the initial
 hand-authored patterns are EN→RU only. Other pairs index existing multiword
-headwords. Full Kaikki structural fields and corpus phrase mining are future
-coverage improvements. Existing Pages compact packs are unchanged.
+headwords. Full Kaikki normalization additionally exposes optional language-local
+`expression_refs` and `lemma_refs` in existing `kaikki` units, limited to the
+edition's own language (Simple English → en). References are extracted from
+actual multiword entries, explicit derived links, tags and `form_of` records.
+They include source URLs/licences but are not translations; resolve their
+`lookup` or `lemma` through normal pair lookup. Existing directional links
+continue to contain only the requested target language. Corpus phrase mining
+and richer classification remain future work. Existing Pages compact packs
+are unchanged.

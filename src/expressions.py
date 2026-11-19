@@ -39,7 +39,7 @@ def keys_for(expression,language):
                 result.extend((token[:-2],token[:-1]))
             elif token.endswith("ing") and len(token)>5:
                 result.extend((token[:-3],token[:-3]+"e"))
-            if token.endswith("s") and len(token)>3:result.append(token[:-1])
+            if token.endswith("s") and len(token)>3 and not token.endswith(("ss","us","is")):result.append(token[:-1])
     return list(dict.fromkeys(result))
 
 def rank(row):

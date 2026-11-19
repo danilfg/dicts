@@ -158,13 +158,20 @@ def normalize_kaikki(tag,assets,root,folder):
         edition=item["parts"][0]["asset"].split("--",1)[1].split(".part")[0]
         with tempfile.TemporaryDirectory(dir=folder) as tmp:
             p=raw_file(tag,assets,item,Path(tmp))
+            from kaikki_expressions import collect,merge
             by_lang=collections.defaultdict(dict);total=0
+            expression_index=collections.defaultdict(dict);lemma_index=collections.defaultdict(dict)
             with gzip.open(p,"rt",encoding="utf8") as f:
                 for line in f:
                     try:e=json.loads(line)
                     except ValueError:continue
                     word=normalize(str(e.get("word","")));language=lang(e.get("lang_code","und"))
                     if not word or len(word)>100 or language=="und":continue
+                    # Retain structured multiword links for the edition's own
+                    # language before the compact definition cap. Other languages
+                    # still receive the existing normalized dictionary records.
+                    if language==edition or (edition=="simple" and language=="en"):
+                        collect(expression_index[language],lemma_index[language],e,language,edition)
                     words=by_lang[language]
                     if word not in words and (len(words)>=10_000 or (total>=200_000 and words)):continue
                     defs=[g for s in e.get("senses",[]) for g in s.get("glosses",[]) if isinstance(g,str) and g][:8]
@@ -178,6 +185,8 @@ def normalize_kaikki(tag,assets,root,folder):
                     for tr in translations:
                         if tr not in row["translations"] and len(row["translations"])<20:row["translations"].append(tr)
                     if e.get("pos") and e["pos"] not in row["parts_of_speech"]:row["parts_of_speech"].append(e["pos"])
+            for language in expression_index.keys()|lemma_index.keys():
+                merge(by_lang[language],expression_index.get(language,{}),lemma_index.get(language,{}))
             for language,words in sorted(by_lang.items()):
                 row=shards(root,"kaikki",language,words,edition)
                 if row:result.append(row)
@@ -241,7 +250,7 @@ def run(tag,group,work,previous=""):
             report=json.loads((folder/"REFRESH-REPORT.json").read_text())
             relevant={"bilingual":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages":("koreader","freedict","wikdict","kaikki","tatoeba"),"pages-lexical":("oewn","omw","conceptnet")}.get(group,(group,))
             unchanged=all(report["sources"][s]["status"] in ("unchanged","retained") for s in relevant)
-            if unchanged and group not in ("bilingual","pages","pages-lexical"):
+            if unchanged and group not in ("bilingual","pages","pages-lexical") and not (group=="kaikki" and "normalized--expressions-index.json" not in prior):
                 index=f"normalized--{group}-index.json"
                 if index in prior:
                     pull(previous,[index],folder,prior)

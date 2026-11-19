@@ -47,7 +47,7 @@ def split_record(group,language,entry):
             elif LANG_RE.fullmatch(str(target or "")):links[target].append(e)
     original[field]=local
     if group=="conceptnet" and not local:original=None
-    if group=="kaikki" and not local and not original.get("definitions"):original=None
+    if group=="kaikki" and not local and not any(original.get(k) for k in ("definitions","expression_refs","lemma_refs")):original=None
     records={}
     for target,values in links.items():
         row={field:values}

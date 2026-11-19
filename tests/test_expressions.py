@@ -62,3 +62,19 @@ class ExpressionTests(unittest.TestCase):
         self.assertIn("take",keys_for("took part in","en"))
         self.assertIn("entitle",keys_for("entitled to","en"))
         self.assertEqual(keys_for("single","en"),[])
+
+    def test_kaikki_structure_and_morphology(self):
+        from kaikki_expressions import collect,merge
+        from pair_pack import split_record
+        index={};forms={}
+        collect(index,forms,{"word":"take off","pos":"verb","senses":[{"tags":["phrasal-verb"]}]},"en","en")
+        collect(index,forms,{"word":"take","derived":[{"word":"take care of"}]},"en","en")
+        collect(index,forms,{"word":"took","senses":[{"form_of":[{"word":"take"}]}]},"en","en")
+        words={};merge(words,index,forms)
+        self.assertTrue(any(x["kind"]=="phrasal_verb" for x in words["take"]["expression_refs"]))
+        self.assertTrue(any(x["expression"]=="take care of" for x in words["take"]["expression_refs"]))
+        self.assertEqual(words["took"]["lemma_refs"][0]["lemma"],"take")
+        local,links=split_record("kaikki","en",words["take"])
+        self.assertIsNotNone(local)
+        self.assertEqual(links,{})
+        self.assertNotIn("translation",local["expression_refs"][0])
