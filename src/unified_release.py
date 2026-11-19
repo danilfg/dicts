@@ -185,7 +185,7 @@ def validate(tag,assets,folder):
         names.add("PAIR-INDEX.json")
     if "LEXICAL-INDEX.json" in assets:
         idx=doc("LEXICAL-INDEX.json")
-        if idx["version"]!=tag or set(idx["groups"])!=set(GROUPS):raise ValueError("Invalid master normalized index")
+        if idx["version"]!=tag or set(idx["groups"]) not in (set(GROUPS),set(GROUPS)-{"expressions"}):raise ValueError("Invalid master normalized index")
         for group,item in idx["groups"].items():
             check(item["index"],item["sha256"],item["bytes"])
         if "pair_index" in idx:
@@ -263,7 +263,7 @@ OCI data package: [ghcr.io/danilfg/dicts-data](https://github.com/danilfg/dicts/
 - WordNet and ConceptNet: oewn--, omw--, conceptnet-- and lexicon-- files.
 - [Pair-selective application catalog](https://github.com/{REPO}/releases/download/{tag}/PAIR-INDEX.json) — download only selected direction and its two languages as verified independent OCI blobs.\n- [Normalized group inventory](https://github.com/{REPO}/releases/download/{tag}/LEXICAL-INDEX.json) (all sources; compact corpus/graph subsets).
 - [Source refresh report](https://github.com/{REPO}/releases/download/{tag}/REFRESH-REPORT.json) (exact changed assets and retained sources).
-- Preserve original licenses and source-specific attribution. Third-party data are not covered by the project MIT license.
+- Optional expressions reverse index: multiword headwords, curated grammar patterns and examples, per pair. See docs/NORMALIZATION.md.\n- Preserve original licenses and source-specific attribution. Third-party data are not covered by the project MIT license.
 """
         from release_plan import release_notes
         notes+=release_notes(report)

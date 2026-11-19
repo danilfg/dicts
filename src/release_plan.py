@@ -23,8 +23,9 @@ def plan(old,new,changed,retained,version,previous):
         modifies=any(row[k] for k in ("added","updated","removed"))
         row["status"]="updated_with_stale_data" if modifies and row["retained"] else "updated" if modifies else "retained" if row["retained"] else "unchanged"
     bootstrap="PAIR-INDEX.json" not in old
-    return {"schema":1,"version":version,"previous_release":previous,"publish":bool(changed or bootstrap),
-            "normalization_bootstrap":bootstrap,"sources":families}
+    expressions_bootstrap="normalized--expressions-index.json" not in old
+    return {"schema":1,"version":version,"previous_release":previous,"publish":bool(changed or bootstrap or expressions_bootstrap),
+            "normalization_bootstrap":bootstrap,"expressions_bootstrap":expressions_bootstrap,"sources":families}
 
 def release_notes(report):
     lines=["","## Source update report","",f"Baseline: `{report['previous_release']}`","",
@@ -44,6 +45,7 @@ def release_notes(report):
                 lines.append(f"- `{item['file']}`: {state}; {reason}")
             if len(row["retained"])>12:lines.append("- Further retained/unavailable files: see REFRESH-REPORT.json.")
     if report["normalization_bootstrap"]:lines+=["","First release with pair-selective normalized application packages."]
+    if report.get("expressions_bootstrap"):lines+=["","Adds the optional expressions reverse index; source refresh statuses above are unchanged."]
     lines+=["","Changes describe source files, not invented per-entry linguistic diffs. Original licenses remain in force.",""]
     return "\n".join(lines)
 

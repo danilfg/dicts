@@ -329,3 +329,34 @@ Cache by content digest, not file name or release. Use a pinned version for repe
 ## Rights and compatibility
 
 See [source licensing and notices](../legal/NOTICE.md) and the release's `SOURCES.json`, `NOTICE.md`, `THIRD-PARTY-NOTICES.md`, component manifests and original archives. The code's MIT license is separate from dictionary content. Sources remain independently attributed and original obligations apply. The report `REFRESH-REPORT.json` identifies retained older data. This protocol is not compatible with older whole-group release ZIP indexes; use the correct versioned reader.
+
+## Optional expressions reverse index
+
+The `expressions` group is derived from full bilingual normalized shards, including
+available compact Kaikki expression definitions. It is not a ninth upstream
+dictionary. It uses the existing `oci-pair-v1` schema, pair scope and
+`kind: "links"` envelope; no translation pair is added by this group.
+Old clients dynamically select it and ignore the unknown `expressions` field.
+They may download additional bytes but do not need a protocol upgrade.
+
+Use the existing SHA-256 first-byte bucket algorithm (128 buckets) on the
+normalized selected word and its lemma variants. The member path is
+`data/links/expressions/<pair>/<bucket>.json.gz`. Missing shards/keys mean no
+matches. Each key returns an array of wrappers, with
+`record.expressions` containing up to 32 matches.
+`text` is the display title; `expression` is the lookup form.
+`kind` is one of `expression`, `construction`, `phrasal_verb`, `idiom`,
+`collocation`, `fixed_expression`. Unclassified headwords stay `expression`;
+the algorithm does not infer grammatical templates from arbitrary phrases.
+`articles` holds the original source/rights and optional Kaikki definition.
+Resolve the original phrase in the existing bilingual unit and apply the
+regular translation parser before presenting any article as a translation.
+For authored starter entries only, `translation`, `example`,
+`example_translation`, `source`, `language` and `license` are explicit.
+`configs/expressions-en-ru.json` contains the MIT-licensed original examples.
+The source data retain their own licenses and attribution.
+
+The reverse index is bounded and heuristic, not exhaustive; the initial
+hand-authored patterns are EN→RU only. Other pairs index existing multiword
+headwords. Full Kaikki structural fields and corpus phrase mining are future
+coverage improvements. Existing Pages compact packs are unchanged.

@@ -289,6 +289,13 @@ def run(tag,group,work,previous=""):
     out=work/"packs"
     if group in ("pages","pages-lexical"):pack(root,group,out)
     else:pack_application(root,group,out)
+    if group=="bilingual":
+        # Build the reverse index from the just-normalized full pair data, not
+        # a second download or the constrained public Pages subset.
+        from expressions import build as build_expressions
+        expression_root=work/"expressions"
+        build_expressions(root,expression_root)
+        pack_application(expression_root,"expressions",out)
     upload(tag,sorted(out.iterdir()))
 
 if __name__=="__main__":

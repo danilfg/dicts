@@ -1,0 +1,304 @@
+{
+  "schema": 1,
+  "pair": "en-ru",
+  "notice": "Original project-authored starter entries; not extracted from or attributed to third-party dictionaries. Examples are illustrative.",
+  "entries": [
+    {
+      "text": "be entitled to + noun",
+      "expression": "be entitled to",
+      "kind": "construction",
+      "translation": "иметь право на что-либо",
+      "keys": [
+        "entitle",
+        "entitled"
+      ],
+      "example": "You are entitled to a refund.",
+      "example_translation": "Вы имеете право на возврат денег.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "be entitled to + verb",
+      "expression": "be entitled to",
+      "kind": "construction",
+      "translation": "иметь право что-либо сделать",
+      "keys": [
+        "entitle",
+        "entitled"
+      ],
+      "example": "You are entitled to vote.",
+      "example_translation": "Вы имеете право голосовать.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "entitle someone to something",
+      "expression": "entitle",
+      "kind": "construction",
+      "translation": "давать кому-либо право на что-либо",
+      "keys": [
+        "entitle",
+        "entitled"
+      ],
+      "example": "This ticket entitles you to a discount.",
+      "example_translation": "Этот билет даёт вам право на скидку.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "be aware of + noun",
+      "expression": "be aware of",
+      "kind": "construction",
+      "translation": "знать о чём-либо; осознавать",
+      "keys": [
+        "aware"
+      ],
+      "example": "Are you aware of the risks?",
+      "example_translation": "Вы знаете о рисках?",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "be supposed to + verb",
+      "expression": "be supposed to",
+      "kind": "construction",
+      "translation": "быть должным; предполагаться",
+      "keys": [
+        "suppose",
+        "supposed"
+      ],
+      "example": "We are supposed to leave at noon.",
+      "example_translation": "Мы должны уехать в полдень.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "rely on + noun",
+      "expression": "rely on",
+      "kind": "construction",
+      "translation": "полагаться на кого-либо или что-либо",
+      "keys": [
+        "rely"
+      ],
+      "example": "You can rely on me.",
+      "example_translation": "Ты можешь на меня положиться.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "clear out",
+      "expression": "clear out",
+      "kind": "phrasal_verb",
+      "translation": "освобождать; вычищать",
+      "keys": [
+        "clear"
+      ],
+      "example": "We need to clear out the garage.",
+      "example_translation": "Нам нужно освободить гараж.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "clear out of + place",
+      "expression": "clear out of",
+      "kind": "construction",
+      "translation": "убраться из какого-либо места",
+      "keys": [
+        "clear"
+      ],
+      "example": "Clear out of the room.",
+      "example_translation": "Убирайтесь из комнаты.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take off",
+      "expression": "take off",
+      "kind": "phrasal_verb",
+      "translation": "взлетать; снимать",
+      "keys": [
+        "take"
+      ],
+      "example": "The plane will take off soon.",
+      "example_translation": "Самолёт скоро взлетит.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take care of",
+      "expression": "take care of",
+      "kind": "collocation",
+      "translation": "заботиться о",
+      "keys": [
+        "take",
+        "care"
+      ],
+      "example": "I take care of my dog.",
+      "example_translation": "Я забочусь о своей собаке.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take part in",
+      "expression": "take part in",
+      "kind": "collocation",
+      "translation": "принимать участие в",
+      "keys": [
+        "take",
+        "part"
+      ],
+      "example": "She took part in the competition.",
+      "example_translation": "Она участвовала в соревновании.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take place",
+      "expression": "take place",
+      "kind": "collocation",
+      "translation": "происходить; состояться",
+      "keys": [
+        "take",
+        "place"
+      ],
+      "example": "The meeting takes place tomorrow.",
+      "example_translation": "Встреча состоится завтра.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take advantage of",
+      "expression": "take advantage of",
+      "kind": "collocation",
+      "translation": "воспользоваться",
+      "keys": [
+        "take",
+        "advantage"
+      ],
+      "example": "Take advantage of the offer.",
+      "example_translation": "Воспользуйтесь предложением.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take into account",
+      "expression": "take into account",
+      "kind": "collocation",
+      "translation": "учитывать",
+      "keys": [
+        "take",
+        "account"
+      ],
+      "example": "Take the cost into account.",
+      "example_translation": "Учтите стоимость.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "take responsibility for",
+      "expression": "take responsibility for",
+      "kind": "collocation",
+      "translation": "брать ответственность за",
+      "keys": [
+        "take",
+        "responsibility"
+      ],
+      "example": "He took responsibility for the mistake.",
+      "example_translation": "Он взял на себя ответственность за ошибку.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "make a decision",
+      "expression": "make a decision",
+      "kind": "collocation",
+      "translation": "принимать решение",
+      "keys": [
+        "make",
+        "decision"
+      ],
+      "example": "We need to make a decision.",
+      "example_translation": "Нам нужно принять решение.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "break the ice",
+      "expression": "break the ice",
+      "kind": "idiom",
+      "translation": "разрядить обстановку",
+      "keys": [
+        "break",
+        "ice"
+      ],
+      "example": "A joke helped break the ice.",
+      "example_translation": "Шутка помогла разрядить обстановку.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "under the weather",
+      "expression": "under the weather",
+      "kind": "idiom",
+      "translation": "нездоровиться; плохо себя чувствовать",
+      "keys": [
+        "weather"
+      ],
+      "example": "I'm feeling under the weather.",
+      "example_translation": "Я плохо себя чувствую.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    },
+    {
+      "text": "as far as I know",
+      "expression": "as far as i know",
+      "kind": "fixed_expression",
+      "translation": "насколько я знаю",
+      "keys": [
+        "know"
+      ],
+      "example": "As far as I know, it's open.",
+      "example_translation": "Насколько я знаю, это открыто.",
+      "source": "dicts-curated",
+      "source_url": "https://github.com/danilfg/dicts/blob/main/configs/expressions-en-ru.json",
+      "license": "MIT",
+      "language": "ru"
+    }
+  ]
+}

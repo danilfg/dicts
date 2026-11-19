@@ -1,1 +1,2 @@
 2026-11-17: rerun OCI migration after REST API quota regression fix and preflight budget check.
+2026-11-19 expressions reverse index bootstrap

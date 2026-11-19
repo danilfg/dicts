@@ -9,7 +9,7 @@ import zipfile
 from pathlib import Path
 
 MAX_PACK = 1_400_000_000
-GROUPS = ("bilingual","pages","oewn","omw","conceptnet","kaikki","tatoeba","pages-lexical")
+GROUPS = ("bilingual","pages","oewn","omw","conceptnet","kaikki","tatoeba","pages-lexical","expressions")
 
 def sha(path):
     with path.open("rb") as f:

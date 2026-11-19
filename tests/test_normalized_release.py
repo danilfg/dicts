@@ -30,7 +30,11 @@ class NormalizedReleaseTests(unittest.TestCase):
                 self.assertEqual(report["sources"][source]["status"],"retained")
                 self.assertEqual(report["sources"][updated]["status"],"updated")
     def test_no_changes_no_release_after_bootstrap(self):
-        self.assertFalse(plan({"PAIR-INDEX.json":{}},{},[],{},"v2","v1")["publish"])
+        self.assertFalse(plan({"PAIR-INDEX.json":{},"normalized--expressions-index.json":{}},{},[],{},"v2","v1")["publish"])
+        report=plan({"PAIR-INDEX.json":{}},{},[],{},"v2","v1")
+        self.assertTrue(report["publish"])
+        self.assertTrue(report["expressions_bootstrap"])
+        self.assertFalse(report["normalization_bootstrap"])
         self.assertTrue(plan({}, {}, [], {}, "v2","v1")["publish"])
     def test_source_isolation(self):
         self.assertTrue(belongs("lexicon--oewn-en.json.gz","oewn"))

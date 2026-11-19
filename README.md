@@ -154,3 +154,5 @@ LICENSE
 ```
 
 [**GitHub Releases**](https://github.com/danilfg/dicts/releases) · [**Issues**](https://github.com/danilfg/dicts/issues) · [**Third-party notices**](legal/NOTICE.md)
+
+The optional `expressions` OCI group provides pair-specific reverse lookup of multiword headwords and original EN→RU starter grammar patterns. See [normalization and API documentation](docs/NORMALIZATION.md). Existing `oci-pair-v1` consumers remain compatible.

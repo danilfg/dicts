@@ -107,6 +107,13 @@ def pack_application(root,group,output):
                 if not files:raise ValueError("Missing bilingual unit "+key)
                 emit("pairs",key,files,root,{"kind":"bilingual","descriptor":row,"provenance":doc["provenance"].get(key,{})})
                 if PAIR_RE.fullmatch(key):pair_meta[key]={"from":row["from"],"to":row["to"],"sources":sorted(set(doc["provenance"].get(key,{}))|{x["id"] for x in row["sources"]})}
+        elif group=="expressions":
+            doc=json.loads((root/"data/expressions/catalog.json").read_text())
+            for row in doc["pairs"]:
+                key=row["pair"]; files=list((root/row["path"]).glob("*.json.gz"))
+                if not files:raise ValueError("Missing expressions unit "+key)
+                emit("pairs",key,files,root,{"kind":"links","path":row["path"],"buckets":row["buckets"]})
+                # This optional index must not advertise a new translation pair.
         else:
             doc=json.loads((root/"data/lexical"/group/"catalog.json").read_text())
             by_lang=collections.defaultdict(list)
